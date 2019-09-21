@@ -1,0 +1,46 @@
+
+
+Alpine:
+	
+	Alpine中软件安装包的名字可能会与其他发行版有所不同,可以在 https://pkgs.alpinelinux.org/packages网站搜索并确定安装包名称.
+	如果需要的安装包不在主索引内,但是在测试或社区索引中.那么可以按照以下方法使用这些安装包.
+
+	echo "http://dl-4.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+	apk --update add --no-cache <package>
+	
+	docker build -f alpine -t alpine:v3.10 .
+	
+	wget https://dl-4.alpinelinux.org/alpine/latest-stable/releases/x86_64/alpine-minirootfs-3.10.0-x86_64.tar.gz
+	
+	vim alpine
+FROM scratch
+ADD alpine-minirootfs-3.10.0-x86_64.tar.gz /
+CMD ["/bin/sh"]
+
+
+
+	docker system df		#查看占用空间详情
+	docker image ls -f dangling=true 	#查看虚悬镜像
+	docker image prune		#清除镜像
+	docker image ls -a		#显示包括中间层镜像在内的所有镜
+	docker image ls alpine 	#列出部分镜像
+	docker image ls -f since=alpine:latest 	#filter查看镜像
+	docker image ls -f label=com.example.version=0.1
+	docker image ls --format "{{.ID}}: {{.Repository}}"
+	docker image ls --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}"
+	docker image ls --digests	#查看镜像摘要
+	docker diff container_name	#查看容器修改
+	
+	容器提交为镜像:
+	docker commit \
+    --author "Tao Wang <twang2218@gmail.com>" \
+    --message "修改了默认网页" \
+    webserver \
+    nginx:v2
+	
+		--author是指定修改的作者;--message则是记录本次修改的内容
+	
+	docker history  alpine		#查看镜像内的历史记录
+	
+	
+	

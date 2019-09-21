@@ -1,0 +1,91 @@
+
+一、基本概念
+	 1、副本集：一个副本集就是一组MongoDB实例组成的集群,由一个主(Primary)服务器和多个备份(Secondary)服务器构成
+	 2、主节点(master)：主节点接收所有写入操作.主节点将对其数据集所做的所有更改记录到其oplog.
+	 3、副节点(secondary)：复制主节点的oplog并将操作应用到其数据集,如果主节点不可用,一个合格的副节点将被选为新的主节点.
+	 4、仲裁节点(arbiter)：负载选举,当主节点不可用,它将从副节点中选一个作为主节点.
+	 
+	 
+二、部署副本集
+	1、下载monodb镜像,这里版本为：3.6.12
+		docker pull mongodb:3.6.12
+
+	2、创建三个mongodb的数据目录：
+		mkdir -p /data/{yml,master,secondary,arbiter}
+		vim /data/yml/docker-compose.yml
+
+version: '2.1'
+services:
+  master:
+    image: mongodb:3.6.12
+    container_name: master
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - /data/master:/data/db
+    command: mongod --dbpath /data/db --replSet testSet --oplogSize 128
+  secondary:
+    image: mongodb:3.6.12
+    container_name: secondary
+    restart: always
+    ports:
+      - 27018:27017
+    volumes:
+      - /data/secondary:/data/db
+    command: mongod --dbpath /data/db --replSet testSet --oplogSize 128
+  arbiter:
+    image: mongodb:3.6.12
+    container_name: arbiter
+    restart: always
+    ports:
+      - 27019:27017
+    volumes:
+      - /data/arbiter:/data/db
+    command: mongod --replSet testSet --smallfiles --oplogSize 128
+	
+	
+三、启动:
+	docker-compse up -d
+	docker-compse ps 
+
+四、配置mongodb yum源并安装mongodb客户端:
+
+cat > /etc/yum.repos.d/mongo.repo<<EOF
+[mongodb-org-4.2]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/4.2/x86_64/
+gpgcheck=0
+enabled=0
+gpgkey=https://www.mongodb.org/static/pgp/server-4.2.asc
+EOF
+
+	yum makecache 
+	yum install mongodb -y
+
+
+
+五、mongo shell中初始化mongodb副本集集群：
+	mongo --host 10.101.1.25 --port 27017
+	rs.initiate()
+	rs.add('10.101.1.25:27018')  		表示将secondary添加进副本集
+	rs.add('10.101.1.25:27019',true)   其中true表示这个节点是仲裁节点
+	
+	rs.conf()
+	rs.status()
+	
+	
+六、如果要修改副本集的配置,可以采用以下方法：
+	conf=rs.conf()
+	conf.members[0].host="10.101.1.25:27017"
+	rs.reconfig(conf,{"force":true})
+
+	
+七、验证mongdb可用性：
+	由上测试可知：副节点只能读,不能写
+	
+	
+八、客户端连接mongodb
+	1、登录mongo shell,创建一个admin用户:
+		db.createUser({user:"admin",pwd:"admin",roles:[{"role":"userAdminAnyDatabase","db":"admin"},{"role":"readWrite","db":"testdb"}]})
+

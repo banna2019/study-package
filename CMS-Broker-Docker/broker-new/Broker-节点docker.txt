@@ -1,0 +1,25 @@
+
+一、云平台安全组开放
+	CMS-Broker(安全组):
+		nodes-SSH:
+			SSH、ICMP 白名单
+			
+		nodes-Broker:
+			5656	0.0.0.0/0
+			6655	0.0.0.0/0
+			6565	0.0.0.0/0
+					
+	NGINX-PORT:
+		5656(nginx_local)----->8088(aws_elb:8088)		#要在aws_elb上添加8088白名单
+		6655(nginx_local)----->8881(aws_elb:8881)
+		6565(nginx_local)----->9354(aws_elb:9354)
+
+
+二、docker启动容器
+docker build -t proxy_web:v1.0 .
+
+docker run -itd --name proxy --restart=always -p 8888:443 -p 80:80 -e ELB_HTTP_URL=elb-merchant-502225109.ap-southeast-1.elb.amazonaws.com -e HTTPS_HOST=18.162.62.170 -e HTTP_HOST=18.162.62.170 proxy_web:v1.0
+
+
+
+

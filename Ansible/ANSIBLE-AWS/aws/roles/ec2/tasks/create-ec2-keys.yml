@@ -1,0 +1,63 @@
+---
+- name: Create H5 NODES EC2 key
+  ec2_key:
+    name: "{{ keys_h5 }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    
+- name: Create DATA NODES EC2 key
+  ec2_key:
+    name: "{{ keys_data }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+  
+- name: Create BILL NODES EC2 key
+  ec2_key:
+    name: "{{ keys_bill }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+- name: Create BET NODES EC2 key
+  ec2_key:
+    name: "{{ keys_bet1 }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+- name: Create BROKER NODES EC2 key
+  ec2_key:
+    name: "{{ keys_broker }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+  
+- name: Create MQ NODES EC2 key
+  ec2_key:
+    name: "{{ keys_mq }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+- name: Create DOCK NODES EC2 key
+  ec2_key:
+    name: "{{ keys_dock }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+- name: Create CHAT NODES EC2 key
+  ec2_key:
+    name: "{{ keys_chat }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+  
+- name: Create CMS NODES EC2 key
+  ec2_key:
+    name: "{{ keys_cms }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"

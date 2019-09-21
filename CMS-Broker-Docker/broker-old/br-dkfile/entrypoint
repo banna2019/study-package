@@ -1,0 +1,14 @@
+#!/bin/bash
+cat /opt/nginx.conf.template | \
+   sed "s#@CMS_DNS@#${CMS_DNS}#g" | \
+   sed "s#@ADMIN_PORT@#${ADMIN_PORT}#g" | \
+   sed "s#@ADMIN_LISTEN_PORT@#${ADMIN_LISTEN_PORT}#g" | \
+   sed "s#@SHARE_PORT@#${SHARE_PORT}#g" | \
+   sed "s#@SHARE_LISTEN_PORT@#${SHARE_LISTEN_PORT}#g" | \
+   sed "s#@CHAT_PORT@#${CHAT_PORT}#g" | \
+   sed "s#@CHAT_LISTEN_PORT@#${CHAT_LISTEN_PORT}#g" | \
+   cat > /etc/nginx/nginx.conf
+   
+/usr/sbin/nginx -g 'daemon off;'
+
+

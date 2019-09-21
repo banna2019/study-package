@@ -1,0 +1,35 @@
+
+	hostnamectl set-hostname devops-registry
+	
+一、创建证书文件夹和registry登录用户配置文件文件夹:
+	mkdir -p /data/docker/registry/{certs,auth}
+
+二、生成ssl证书:
+openssl req -new -newkey rsa:4096 -days 365 -subj "/CN=devops-registry" -nodes -x509 -keyout \
+  /data/docker/registry/certs/devops-registry.key -out /data/docker/registry/certs/devops-registry.crt
+  
+ 
+三、创建私有仓库用户
+	admin admin123就是账号和密码了:
+		docker run --entrypoint htpasswd registry:latest -Bbn admin admin123 > /data/docker/registry/auth/htpasswd
+		
+		
+四、docker run启动私有仓库：
+docker run -dit -p 7149:5000 --restart=always --name devops-registry \
+-v /data/docker/registry/auth:/auth \
+-e REGISTRY_AUTH=htpasswd \
+-e REGISTRY_AUTH_HTPASSWD_REALM="Registry Realm" \
+-e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+-e REGISTRY_STORAGE_DELETE_ENABLED="true" \
+-v /data/docker/registry/certs:/certs \
+-v /data/docker/registry/data:/var/lib/registry \
+-e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/devops-registry.crt \
+-e REGISTRY_HTTP_TLS_KEY=/certs/devops-registry.key registry:2.7.1
+
+
+五、访问仓库:
+	curl https://devops-registry:7149/v2/_catalog --insecure
+
+	
+
+

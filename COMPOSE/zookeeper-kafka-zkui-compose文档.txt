@@ -1,0 +1,78 @@
+
+
+安装yum依赖包与docker-compose:
+	yum install gcc gcc-c++ perl dos2unix wget lrzsz vim unzip  epel-release -y
+	yum install python-pip -y 
+	pip install docker-compose
+
+
+启动kafka和zookeeper及zkui:
+	docker network create --driver bridge --subnet 172.23.0.0/25 --gateway 172.23.0.1  zookeeper_network 	#创建docker网络
+	
+	docker-compose -f docker-compose.yml up -d  	#创建zookeeper/kafka集群和zkui管理界面
+	
+	docker-compose logs -f docker-compose.yml logs -f	#查看日志有无报错
+
+
+	备注:
+		1.docker-compose.yml 中的如下两处修改为docker容器的主机名或者宿主机的IP地址,建议还是修改为宿主机的IP地址
+	
+			KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.2.58:9092
+			KAFKA_ADVERTISED_HOST_NAME: 192.168.2.58
+			
+		2.zkui默认的用户名和密码是admin/manager
+
+安装其他支持服务和脚本:
+
+	1.部署jdk环境:
+		tar xf  jdk-8u211-linux-x64.tar.gz -C /usr/local/
+		
+		vim /etc/profile
+		
+export JAVA_HOME=/usr/local/jdk1.8.0_211 
+export JRE_HOME=$JAVA_HOME/jre 
+export CLASSPATH=.:$JAVA_HOME/lib:$JRE_HOME/lib 
+export PATH=$JAVA_HOME/bin:$PATH
+		
+		source /etc/profile
+		
+		
+	2.配置kafka和zookeeper脚本的环境变量
+		tar xf kafka_2.12-2.2.0.tgz
+		tar xf zookeeper-3.4.14.tar.gz
+
+		mv kafka_2.12-2.2.0 /usr/local/kafka
+		mv zookeeper-3.4.14 /usr/local/zookeeper
+		
+		vim /etc/profile
+		
+export PATH=$PATH:/usr/local/kafka/bin
+export PATH=$PATH:/usr/local/zookeeper/bin
+
+		source /etc/profile
+
+
+Kafka读写:
+	创建topics:
+		kafka-topics.sh --create --zookeeper 192.168.2.58:2181 --partitions 3 --replication-factor 3 --topic qsh
+
+	开启消息生茶和消费:
+		kafka-console-producer.sh --broker-list localhost:9092,localhost:9093,localhost:9094 --topic qsh
+		kafka-console-consumer.sh --bootstrap-server localhost:9092,localhost:9093,localhost:9094 --topic qsh --from-beginning
+
+		kafka-console-producer.sh --broker-list 192.168.2.58:9092,192.168.2.58:9093,192.168.2.58:9094 --topic qsh
+		kafka-console-consumer.sh --bootstrap-server 192.168.2.58:9092,192.168.2.58:9093,192.168.2.58:9094 --topic qsh --from-beginning
+
+	列出所有topics和删除topics:
+		kafka-topics.sh --list --zookeeper localhost:2181
+		kafka-topics.sh --delete --zookeeper localhost:2181 --topic qsh
+
+
+	登录zk查看目录情况
+		#使用客户端进入zk
+		zkCli.sh -server 127.0.0.1:2181
+
+		#标注一个重要的
+		#get /brokers/ids/1
+		#get /brokers/topics/qsh/partitions/1
+	

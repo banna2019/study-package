@@ -1,0 +1,16 @@
+---
+- name: Create, launch and configure our basic AWS environment
+  hosts: localhost
+  connection: local
+  gather_facts: True
+
+  vars:
+    ec2_env: "banna"
+    ec2_region: "ap-southeast-1"
+
+  roles:
+    - roles/vpc
+    - roles/subnets
+    - roles/gateway
+#    - roles/securitygroups
+

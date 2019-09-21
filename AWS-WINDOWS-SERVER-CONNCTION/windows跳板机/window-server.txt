@@ -1,0 +1,53 @@
+
+
+老系统AWS WINDOWS SERVER跳板机(原始KEY: jumpserver.pem):
+	一、服务器配置信息
+			jumpserver1(4核8G):			
+				连接信息:
+					18.139.196.226/10.3.11.197
+					公有DNS: ec2-3-1-203-93.ap-southeast-1.compute.amazonaws.com
+					用户名: Administrator
+					密码: rr@ra8)J(T 
+					
+					user: simon		pwd: iaKOxjPXjOQvcu7pIg
+					user: hardy		pwd: cGSXUYbW8kpXgDNHC0
+					user: banna		pwd: IRC0oKAlLQrulgNxZh
+					user: tod		pwd: ruASW4UvOsw9BZ8MaO
+					
+			
+			jumpserver2(4核8G):		
+				连接信息:
+					54.255.178.94/10.3.11.160
+					公有DNS: ec2-13-250-35-199.ap-southeast-1.compute.amazonaws.com
+					用户名: Administrator
+					密码: .X(p9oc6gBt 
+							
+					user: simon 	pwd: iaKOxjPXjOQvcu7pIg
+					user: dana 	    pwd: xisQTWPy9rUVVLGKEq
+					user: declan 	pwd: gKOxZrV0VLz7S2GIQJ
+					user: morey 	pwd: yu5r4fVzHVDenSOTtK
+					
+		
+			jumpserver3(2核4G):			
+				连接信息:
+					3.1.12.246/10.3.11.115
+					公有DNS: ec2-54-255-180-1.ap-southeast-1.compute.amazonaws.com
+					用户名: Administrator
+					密码: xy$VPSiEzv 
+					
+					user: dev 
+					pwd: pgaHBfP64j
+							
+	二、网络访问权限配置信息		
+			安全组:
+				windows-jumpserver:
+					添加IP地址: 218.189.125.122 				开放端口: 3389(windows 远程端口)
+				
+			
+				
+				
+	三、windows server connctions:
+		windows键+r键+mstsc
+		
+		gpedit.msc
+	

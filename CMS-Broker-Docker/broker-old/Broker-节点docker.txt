@@ -1,0 +1,36 @@
+
+一、云平台安全组开放
+	CMS-Broker(安全组):
+		nodes-SSH:
+			SSH、ICMP 白名单
+			
+		nodes-Broker:
+			5656	0.0.0.0/0
+			6655	0.0.0.0/0
+			6565	0.0.0.0/0
+					
+	NGINX-PORT:
+		5656(nginx_local)----->8088(aws_elb:8088)		#要在aws_elb上添加8088白名单
+		6655(nginx_local)----->8881(aws_elb:8881)
+		6565(nginx_local)----->9354(aws_elb:9354)
+
+
+二、docker启动容器
+docker build -t alpine-nginx-broker:v1.0 .
+
+docker run -itd \
+-e ADMIN_PORT=8088 \
+-e ADMIN_LISTEN_PORT=5656 \
+-e SHARE_PORT=8881 \
+-e SHARE_LISTEN_PORT=6655 \
+-e CHAT_PORT=9354 \
+-e CHAT_LISTEN_PORT=6565 \
+-e CMS_DNS=elb-019-CMS-1070521311.ap-southeast-1.elb.amazonaws.com \
+--name brober_node \
+-p 5656:5656 \
+-p 6655:6655 \
+-p 6565:6565 alpine-nginx-broker:v1.0
+
+
+
+

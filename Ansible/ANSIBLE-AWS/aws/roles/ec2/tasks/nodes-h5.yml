@@ -1,0 +1,16 @@
+---
+
+- name: Define Betting fact
+  set_fact:
+    ec2_key_Pair: "{{ keys_h5 }}"
+    vpc_subnet_Id: "{{ vpc_subnet_facts.subnets[0].id }}"
+    ec2_subnet_ipv4_cidr: "{{ item.value[0].cidr }}"
+    #
+    security_group:
+      - "{{ security_ssh }}"
+      - "{{ security_all }}"
+      
+      
+#    ec2_security_group_Id:
+#      - sg-052365812c2839d63    # it-SSH
+#      - sg-0e7af62fc5731f960    # nodes-All

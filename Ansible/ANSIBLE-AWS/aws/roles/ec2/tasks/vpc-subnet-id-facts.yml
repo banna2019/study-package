@@ -1,0 +1,32 @@
+---
+# find the VPC by name
+- name: VPC facts
+  ec2_vpc_net_facts:
+    filters:
+      "tag:Name": "{{ vpc_name }}"
+  register: vpc_facts
+
+# parse the facts output and extract the VPC ID
+- name: "set fact: VPC ID"
+  set_fact:
+    vpc_id: "{{ vpc_facts.vpcs.id }}"
+
+# find our subnets by VPC ID that was just defined
+- name: VPC subnet facts
+  ec2_vpc_subnet_facts:
+    filters:
+      vpc-id: "{{ vpc_id }}"
+  register: vpc_subnet_facts
+
+# - iterate each subnet id found by the facts query
+- name: "set facts: VPC subnet IDs"
+  set_fact:
+    vpc_subnet_id: "{{ vpc_subnet_facts.subnets[0].id }}"
+
+# parse the facts output and extract the IDs with some fancy filter work:
+# - iterate each subnet found by the facts query
+#- name: "set facts: VPC subnet IDs"
+#  set_fact:
+#    vpc_subnet_ids: "{{ vpc_subnet_ids | default({}) | combine({ (item.tags.Name | default('default')): item.id }) }}"
+#  with_items: "{{ vpc_subnet_facts.subnets }}"
+  

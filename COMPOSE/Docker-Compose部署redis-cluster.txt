@@ -1,0 +1,46 @@
+
+一、安装docker-compose服务
+	
+二、安装ruby和redis-trib.rb(命令)
+	1.安装ruby
+		gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+		curl -sSL https://get.rvm.io | bash -s stable
+		source  /etc/profile.d/rvm.sh
+		rvm list known
+		rvm install 2.4.4
+		ruby -v 　
+		gem -v
+		gem install redis
+		
+	2.redis-trib.rb(命令)
+		备注: 需要再redis源码包解压出来(注意:对应redis版本)
+	
+三、启动redis-cluster
+	docker-compose -f docker-compose.yml up -d 
+		备注(所需文件如下):
+			Dockerfile
+			redis.conf
+			entrypoint.sh
+			docker-compose.yml
+			
+	
+	redis-trib.rb create --replicas 1 192.168.2.29:8001 192.168.2.29:8002 192.168.2.29:8003 192.168.2.29:8004 192.168.2.29:8005 192.168.2.29:8006
+		备注: 这里在docker-compose.yml,使用了"network_mode: host"本机网络所以不是独立docker内部IP地址和端口映射
+
+	##docker run --rm -it inem0o/redis-trib create --replicas 1 192.168.2.29:8001 192.168.2.29:8002 192.168.2.29:8003 192.168.2.29:8004 192.168.2.29:8005 192.168.2.29:8006
+		备注: 无法链接上本地端口
+
+	#查看所有docker container的IP_ADDRESS
+		docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq) | grep redis
+		
+
+	请空配置和cluster配置:
+		flushall
+		cluster reset
+		
+	
+
+四、参考博客:
+	https://www.jianshu.com/p/b7dea62bcd8b
+	https://zhuyasen.com/post/redis-cluster.html
+	http://abigfish.net/2019/02/18/docker-redis-cluster%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/

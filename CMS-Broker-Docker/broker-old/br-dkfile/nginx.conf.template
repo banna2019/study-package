@@ -1,0 +1,144 @@
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+worker_rlimit_nofile 204800;
+
+# Load dynamic modules. See /usr/share/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    use epoll;
+    worker_connections 204800;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+
+##----------------------------------------------
+    upstream https_Admin {
+        server @CMS_DNS@:@ADMIN_PORT@;
+    }
+    server {
+        listen       @ADMIN_LISTEN_PORT@ ssl;
+        server_name  localhost;
+  
+        ssl                  on;
+        ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+        ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+        ssl_dhparam /etc/ssl/certs/dhparam.pem;
+        ssl_session_timeout  5m;
+
+        ssl_protocols  SSLv2 SSLv3 TLSv1;
+        ssl_ciphers  ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP;
+        ssl_prefer_server_ciphers   on;
+
+        location / {
+          proxy_pass          http://https_Admin;
+          proxy_set_header    Host             $host;
+          proxy_set_header    X-Real-IP        $remote_addr;
+          proxy_set_header    X-Forwarded-For  $proxy_add_x_forwarded_for;
+          proxy_set_header    X-Client-Verify  SUCCESS;
+          proxy_set_header    X-Client-DN      $ssl_client_s_dn;
+          proxy_set_header    X-SSL-Subject    $ssl_client_s_dn;
+          proxy_set_header    X-SSL-Issuer     $ssl_client_i_dn;
+          proxy_read_timeout 1800;
+          proxy_connect_timeout 1800;
+	  proxy_ssl_server_name on;
+        }
+    }
+
+##----------------------------------------------
+    upstream http_Share {
+        server @CMS_DNS@:@SHARE_PORT@;
+    }
+    server {
+        listen       @SHARE_LISTEN_PORT@;
+        server_name  localhost;
+        location / {
+                proxy_pass  http://http_Share;
+
+                #Proxy Settings
+                proxy_redirect     off;
+                proxy_set_header   Host             $host;
+                proxy_set_header   X-Real-IP        $remote_addr;
+                proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+                proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+                proxy_max_temp_file_size 0;
+                proxy_connect_timeout      90;
+                proxy_send_timeout         90;
+                proxy_read_timeout         90;
+                proxy_buffer_size          4k;
+                proxy_buffers              4 32k;
+                proxy_busy_buffers_size    64k;
+                proxy_temp_file_write_size 64k;
+                #chunked_transfer_encoding off;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+    }
+
+##----------------------------------------------
+
+##----------------------------------------------
+    upstream chat_Admin {
+        server @CMS_DNS@:@CHAT_PORT@;
+    }
+    server {
+        listen       @CHAT_LISTEN_PORT@;
+        server_name  localhost;
+        location / {
+                proxy_pass  http://chat_Admin;
+
+                #Proxy Settings
+                proxy_redirect     off;
+                proxy_set_header   Host             $host;
+                proxy_set_header   X-Real-IP        $remote_addr;
+                proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+                proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+                proxy_max_temp_file_size 0;
+                proxy_connect_timeout      90;
+                proxy_send_timeout         90;
+                proxy_read_timeout         90;
+                proxy_buffer_size          4k;
+                proxy_buffers              4 32k;
+                proxy_busy_buffers_size    64k;
+                proxy_temp_file_write_size 64k;
+                #chunked_transfer_encoding off;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+    }
+
+
+##-----------------------------------------------
+}
+

@@ -1,0 +1,35 @@
+
+Linux压力测试软件stress:
+产生12个cpu进程6个io进程1分钟后停止运行:
+	stress -c 12 -i 6 --verbose --timeout 1m 
+
+ 
+	注释:
+		-c forks
+			--cpu forks
+			产生多个处理sqrt()函数的CPU进程
+
+		-i forks
+			--io forks
+			产生多个处理sync()函数的磁盘I/O进程
+
+		-v
+			--verbose 显示详细运行信息
+
+		-t secs
+			--timeout secs 指定运行多少秒
+			--backoff usecs 等待usecs微秒后才开始执行
+
+
+参考：
+	http://blog.sina.com.cn/s/blog_5f50a4c80101pdik.html
+	
+	
+
+
+ASG参考博客:
+	https://51daiwei.net/aws-ec2-config-auto-scaling
+	https://blog.csdn.net/wangzan18/article/details/93719771
+	https://chowyi.com/aws-auto-scaling-study/
+	https://github.com/DevOps-Girls/devopsgirls-bootcamp-cn/blob/master/3-1-ASG.md
+	

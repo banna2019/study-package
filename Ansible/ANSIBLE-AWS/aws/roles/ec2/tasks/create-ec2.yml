@@ -1,0 +1,33 @@
+---
+- name: Create H5 EC2 instance
+  ec2_instance:
+    name: "{{ ec2_h5 }}"
+    subnet_id: "{{ vpc_subnet_id }}"
+    instance_type: "{{ ins_type }}"
+    image: "{{ instance_ami }}"
+    key_name: "{{ keys_H5 }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    security_group: "{{ security_ssh,security_all }}"
+    volumes:
+      - device_name: /dev/sda1
+        ebs:
+          volume_size: 20
+          delete_on_termination: true
+    wait: yes
+    count: "{{ count }}"
+    register: "{{ ec2-h5 }}"
+    
+- name: Assign EIP address for web instances
+  ec2_eip:
+    in_vpc: yes
+    reuse_existing_ip_allowed: yes
+    state: present
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    device_id: "{{ item.id }}"
+  with_items: "{{ ec2_h5.tagged_instances }}"
+  register: elastic_ip
+    

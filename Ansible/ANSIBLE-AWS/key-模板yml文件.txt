@@ -1,0 +1,25 @@
+
+
+---
+- hosts: local
+  connection: local
+  gather_facts: no
+  
+  tasks:
+    - name: Create a new EC2 key
+      ec2_key:
+        name: nodes-keys
+        region: ap-southeast-1
+        register: ec2_key_result
+ 
+    - name: Save private key
+      copy: content="{{ ec2_key_result.key.private_key }}" dest="/home/centos/.keys/aws.nodes.pem" mode=0600
+      when: ec2_key_result.changed
+	    
+	- name: Set authorized key took from url
+	  authorized_key:
+		user: centos
+		state: present
+		key: "/home/centos/.keys/{{ ec2_key_Pair }}"
+  
+  

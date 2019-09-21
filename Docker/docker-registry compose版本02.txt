@@ -1,0 +1,81 @@
+
+备注: 此篇文档是在"docker-registry手动安装版01"基础上进行的;在启动docker-compose.yml文件之前需要删除之前启动的registry容器
+不然端口会发生冲突
+
+
+一、docker客户机添加证书,在docker客户机上创建证书目录:
+	mkdir -p /etc/docker/certs.d/devops-registry:7149
+
+二、仓库服务器上生成的/data/docker/registry/certs/devops-registry.crt复制到docker客户机上:
+	cp /data/docker/registry/certs/devops-registry.crt /etc/docker/certs.d/devops-registry:7149
+
+三、docker-compose启动registry:
+	vim docker-registry.yml
+
+version: '2'
+services:
+  devops-registry:
+    restart: always
+    image: registry:latest
+    ports:
+      - 7149:5000
+    environment:
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/devops-registry.crt
+      REGISTRY_HTTP_TLS_KEY: /certs/devops-registry.key
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - /data/registry:/var/lib/registry
+      - /data/docker/registry/certs:/certs
+      - /data/docker/registry/auth:/auth
+    networks:
+      extnetwork:
+        ipv4_address: 172.18.0.2
+
+  docker-ui:
+    restart: always
+    image: konradkleine/docker-registry-frontend:v2 
+    ports:
+      - 5001:80
+    depends_on:
+      - devops-registry
+    environment:
+      ENV_DOCKER_REGISTRY_HOST: devops-registry
+      ENV_DOCKER_REGISTRY_PORT: 5000
+      ENV_DOCKER_REGISTRY_USE_SSL: '1'
+    networks:
+      extnetwork:
+        ipv4_address: 172.18.0.3
+
+networks:
+   extnetwork:
+      ipam:
+         config:
+         - subnet: 172.18.0.0/16
+           gateway: 172.18.0.1
+
+
+	docker-compose -f docker-registry.yml up -d
+	docker-compose -f devops-registry.yml ps 
+
+
+四、添加docker registry私有仓库地址:
+vim /etc/docker/daemon.json
+{
+  "insecure-registries":["devops-registry:7149"]
+}
+
+
+五、在docker客户机上登录私有仓库:
+	docker login -u admin -p admin123 devops-registry:7149
+
+
+六、访问Registry:
+	http://13.250.26.189:5001/repositories/20
+	curl http://devops-registry:5001/v2/_catalog --insecure
+
+七、测试推送和拉取镜像
+	docker tag google/cadvisor:v0.33.0 devops-registry:7149/cadvisor:v1.0
+	docker push devops-registry:7149/cadvisor:v1.0

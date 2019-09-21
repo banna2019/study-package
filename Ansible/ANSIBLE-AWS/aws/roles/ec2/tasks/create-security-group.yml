@@ -1,0 +1,278 @@
+---
+#CREATE EC2 INSTANCE SECURITY GROUPS 
+- name: Create CMS security group
+  ec2_group:
+    name: "{{ security_cms }}"
+    description: "{{ security_cms }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_cms }}"
+    rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 8888
+        to_port: 8888
+        cidr_ip: 218.189.125.122/32
+      - proto: tcp
+        from_port: 8881
+        to_port: 8881
+        cidr_ip: 218.189.125.122/32
+      - proto: tcp
+        from_port: 8883
+        to_port: 8883
+        cidr_ip: 218.189.125.122/32
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+
+- name: Create BILL security group
+  ec2_group:
+    name: "{{ security_bill }}"
+    description: "{{ security_bill }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_bill }}"
+    rules:
+      - proto: tcp 
+        from_port: 8030
+        to_port: 8030
+        cidr_ip: 218.189.125.122/32
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+        
+- name: Create GW security group
+  ec2_group:
+    name: "{{ security_gw }}"
+    description: "{{ security_gw }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_gw }}"
+    rules:
+      - proto: tcp  
+        from_port: 9345
+        to_port:  9345
+        cidr_ip: 0.0.0.0/0
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+    
+- name: Create MQ security group
+  ec2_group:
+    name: "{{ security_mq }}"
+    description: "{{ security_mq }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_mq }}"
+    rules:
+      - proto: tcp 
+        from_port: 1883
+        to_port: 1883
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 18083
+        to_port: 18083
+        cidr_ip: 218.189.125.122/32
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+
+- name: Create ADMIN security group
+  ec2_group:
+    name: "{{ security_admin }}"
+    description: "{{ security_admin }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_admin }}"
+    rules:
+      - proto: tcp  
+        from_port: 6655
+        to_port: 6655
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp  
+        from_port: 6565
+        to_port: 6565
+        cidr_ip: 0.0.0.0/0
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+        
+- name: Create RDS security group
+  ec2_group:
+    name: "{{ security_rds }}"
+    description: "{{ security_rds }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_rds }}"
+    rules:
+      - proto: tcp  
+        from_port: 5432
+        to_port: 5432
+        cidr_ip: 10.13.0.0/16
+      - proto: tcp  
+        from_port: 6379
+        to_port: 6379
+        cidr_ip: 10.13.0.0/16
+      - proto: tcp  
+        from_port: 3306
+        to_port: 3306
+        cidr_ip: 10.13.0.0/16
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+        
+- name: Create SSH security group
+  ec2_group:
+    name: "{{ security_ssh }}"
+    description: "{{ security_ssh }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_ssh }}"
+    rules:
+      - proto: tcp  
+        from_port: 22
+        to_port: 22
+        cidr_ip: 218.189.125.122/32
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+        
+- name: Create ALL security group
+  ec2_group:
+    name: "{{ security_all }}"
+    description: "{{ security_all }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_all }}"
+    rules:
+      - proto: tcp
+        ports:
+          - 0-65535        
+        cidr_ip: 10.13.0.0/16
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+        
+- name: Create ADMIN IPS security group
+  ec2_group:
+    name: "{{ security_ips }}"
+    description: "{{ security_ips }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_ips }}"
+    rules:
+      - proto: tcp  
+        from_port: 5656
+        to_port: 5656
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp  
+        from_port: 6656
+        to_port: 6656
+        cidr_ip: 0.0.0.0/0
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+        
+- name: Create MYIPS security group
+  ec2_group:
+    name: "{{ security_myips }}"
+    description: "{{ security_myips }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_myips }}"
+    rules:
+      - proto: tcp
+        from_port: 8088
+        to_port: 8088
+        cidr_ip: 218.189.125.122/32
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+
+
+#CREATE ELB SECURITY GROUPS    
+- name: Create ELB CMS security group
+  ec2_group:
+    name: "{{ security_lb_cms }}"
+    description: "{{ security_lb_cms }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_lb_cms }}"
+    rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 8881
+        to_port: 8881
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 9354
+        to_port: 9354
+        cidr_ip: 0.0.0.0/0
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+    
+- name: Create ELB WEB security group
+  ec2_group:
+    name: "{{ security_lb_web }}"
+    description: "{{ security_lb_web }} security group"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    tags:
+      Name: "{{ security_lb_web }}"
+    rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 0.0.0.0/0
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0

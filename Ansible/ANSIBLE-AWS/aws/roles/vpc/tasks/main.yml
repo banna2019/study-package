@@ -1,0 +1,5 @@
+# ---
+# playbook that runs our VPC tasks for any hosts in the `vpc` group, providing AWS credentials in the environment 
+- include: create-vpc.yml
+- include: create-vpc-gatway.yml
+#- include: facts.yml

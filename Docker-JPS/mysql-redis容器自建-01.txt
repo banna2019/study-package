@@ -1,0 +1,28 @@
+
+一、redis自建容器与docker 容器启动
+	git clone https://github.com/docker-library/redis.git
+
+	cd redis/5.0
+	docker build -t redis:v1.0 .
+
+	docker run --name redis -d -p 6380:6379 -v /data/redis:/data redis:v1.0 redis-server --appendonly yes
+
+
+
+二、mysql自建容器与docker 容器启动
+	git clone https://github.com/docker-library/mysql.git
+
+	cd mysql/5.7
+
+	docker build -t mysql:v1.0 .
+
+	mkdir -pv /data/mysql
+
+	docker run -d -p 3307:3306 --name mysql-banna -v /data/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=abc123 -e character-set-server=utf8mb4 -e collation-server=utf8mb4_unicode_ci mysql:v1.0
+
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+# hosts.inventory
+# ---
+# the host and group list for this example "Ansibled" project
+
+
+[vpc]
+vpc.ansibled
+
+[project.ansibled:children]
+vpc

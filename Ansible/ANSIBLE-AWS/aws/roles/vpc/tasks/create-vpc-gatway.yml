@@ -1,0 +1,88 @@
+# ---
+# creates the gateways for the VPC,and sets up routing for the subnets
+# find the VPC by name
+- name: VPC facts
+  ec2_vpc_net_facts:
+    filters:
+      "tag:Name": "{{ vpc_name }}"
+  register: vpc_facts
+
+# parse the facts output and extract the VPC ID
+- name: "set fact: VPC ID"
+  set_fact:
+    vpc_id: "{{ vpc_facts.vpcs[0].id }}"
+
+# find our subnets by VPC ID that was just defined
+- name: VPC subnet facts
+  ec2_vpc_subnet_facts:
+    filters:
+      vpc-id: "{{ vpc_id }}"
+  register: vpc_subnet_facts
+
+# parse the facts output and extract the IDs with some fancy filter work:
+# - iterate each subnet found by the facts query
+# - Here is the first subnet_id (private-a) number to configure the creation of the net external network binding 
+- name: "set facts: VPC subnet IDs"
+  set_fact:
+    vpc_subnet_id: "{{ vpc_subnet_facts.subnets[0].id }}"
+
+# create the internet gateway, saving the output to extract the ID later
+- name: create internet gateway
+  ec2_vpc_igw:
+    tags:
+      Name: "{{ vpc_name }}"
+    vpc_id: "{{ vpc_id }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{aws_secret_key  }}"
+  register: create_gateway
+
+# create the NAT gateway, looking up the subnet ID by the human readable name: "private-a"
+# NAT gateway cannot be tags named,Because the tags method is not supported
+- name: create NAT gateway
+  ec2_vpc_nat_gateway:
+    subnet_id: "{{ vpc_subnet_id }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{aws_secret_key  }}"
+    wait: yes
+    if_exist_do_not_create: true
+  register: create_nat_gateway
+
+# parse the outputs of the Ansible modules for some important details referred to when setting up routing
+- name: "set facts: Gateway IDs and IP"
+  set_fact:
+    vpc_gateway_id: "{{ create_gateway.gateway_id }}"
+    vpc_nat_gateway_id: "{{ create_nat_gateway.nat_gateway_id }}"
+    vpc_nat_gateway_ip: "{{ create_nat_gateway.nat_gateway_addresses[-1].public_ip }}"
+
+# private route table that routes through the NAT -- attach it to our three private subnets
+- name: create route table for public subnets
+  ec2_vpc_route_table:
+    vpc_id: "{{ vpc_id }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{aws_secret_key  }}"
+    tags:
+      Name: "{{ vpc_name }}-public"
+    subnets:
+      - "{{ vpc_name }}-private-a"
+      - "{{ vpc_name }}-private-b"
+      - "{{ vpc_name }}-private-c"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ vpc_nat_gateway_id }}"
+
+# public route table that routes through the internet gateway -- attach it to our three public subnets
+- name: create route table for public1 subnets
+  ec2_vpc_route_table:
+    vpc_id: "{{ vpc_id }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{aws_secret_key  }}"
+    tags:
+      Name: "{{ vpc_name }}-public1"
+    subnets:
+      - "{{ vpc_name }}-public-1a"
+      - "{{ vpc_name }}-public-1b"
+      - "{{ vpc_name }}-public-1c"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ vpc_gateway_id }}"

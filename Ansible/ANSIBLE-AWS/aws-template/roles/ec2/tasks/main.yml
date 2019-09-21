@@ -1,0 +1,53 @@
+---
+- include: vpc_subnet_facts.yml
+- include: securitygroups.yml 
+- include: creata_keys.yml 
+#- include: ec2.yml 
+
+- name: "Provision ec2 instance"
+  ec2:
+    key_name: "{{ ec2_key_Pair }}"
+    region: "{{ ec2_region | default('ap-southeast-1') }}"
+    group_id:
+        - "{{ sg_ssh.group_id }}"
+        - "{{ sg_all.group_id }}"
+    instance_type: "{{ ec2_instance_type | default('t2.micro') }}"
+    image: "{{ ec2_ami_Id | default('ami-8e0205f2') }}"
+    wait: true
+    exact_count: "{{ ec2_instance_count }}"
+    count_tag:
+      Name: "{{ ec2_instance_tag_name }}"
+    instance_tags:
+      Name: "{{ ec2_instance_tag_name }}"
+      env: "{{ ec2_env }}"
+    vpc_subnet_id: "{{ vpc_subnet_Id }}"
+    assign_public_ip: yes
+    instance_profile_name: "{{ ec2_instance_profile_name | default('') }}"
+    termination_protection: yes
+    volumes:
+      - device_name: "{{ ec2_volume_Device_Name }}"
+        volume_type: "{{ ec2_volume_type }}"
+        volume_size: "{{ ec2_volume_Size }}"
+        delete_on_termination: false
+  register: ec2
+
+- name: Get only running instance IP addresses.
+  set_fact:
+    private_ips: "{{ ec2.tagged_instances|map(attribute='private_ip')|list }}"
+  
+#- name: Wait for SSH to come up
+#  wait_for: 
+#    host: "{{ private_ips[0] }}"
+#    port: 22
+#    delay: 60
+#    timeout: 200
+#    search_regex: OpenSSH
+#  with_items: "{{ ec2_h5.instances }}"
+
+- name: Configure hostname in /home/centos/aws-template/inventory/hosts
+  lineinfile:
+    state: present
+    dest: /home/centos/aws-template/inventory/hosts
+    regexp: "{{ ec2_env }}-{{ app_name }}"
+    line: "[{{ ec2_env }}-{{ app_name }}]{{'\n'}}{{ private_ips[0] }} ansible_ssh_user={{ ssh_user }} ansible_ssh_private_key_file=/home/centos/aws-template/inventory/group_vars/{{ ec2_key_Pair }}"
+
