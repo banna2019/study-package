@@ -1,0 +1,32 @@
+global:
+  smtp_smarthost: 'smtp.163.com:25'
+  smtp_from: 'xxxx@163.com'
+  smtp_auth_username: 'xxxx@163.com'
+  smtp_auth_password: 'xxxxx'
+  smtp_require_tls: false
+  
+  
+ route:
+   group_by: ['instance']
+   group_wait: 30s
+   group_interval: 5m
+   repeat_interval: 3h
+   receiver: mail
+   routes:
+   - match:
+       severity: critical
+     receiver: pager
+   - match_re:
+       severity: ^(warning|critical)$
+     receiver: support_team
+   
+ receivers:
+   - name: 'mail'
+     email_configs:
+     - to: 'xxxx@163.com'
+   - name: 'support_team'
+     email_configs:
+     - to: 'xxxx@163.com'
+   - name: 'pager'
+     email_configs:
+     - to: 'alert-pager@example.com'

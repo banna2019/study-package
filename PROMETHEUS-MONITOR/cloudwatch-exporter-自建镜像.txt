@@ -1,0 +1,21 @@
+
+一、自建cloudwatch-exporter镜像
+go get github.com/prometheus/cloudwatch_exporter
+cd /root/go/src/github.com/prometheus/cloudwatch_exporter
+docker build -t cloudwatch-exporter:v1.0 .
+
+mkdir /data/cloudwatch
+cp /root/go/src/github.com/prometheus/cloudwatch_exporter/example.yml /data/cloudwatch/
+chmod -R 777 /data
+
+
+二、启动cloudwatch-exporter容器
+docker run -d --name cloudwatch-exporter-banna --net="host" -e AWS_ACCESS_KEY_ID='AKIAQEYBXTWHJJAA65EA' -e AWS_SECRET_ACCESS_KEY='TK+V0BrMD9pQNgrbZmOyPnLOqlI52j9lJ2K69YnJ' -v /data/cloudwatch/example.yml:/config/config.yml cloudwatch-exporter:v1.0 
+
+
+curl http://localhost:9106/metrics
+
+
+	备注: 
+		1.AWS_ACCESS_KEY_ID和AWS_SECRET_ACCESS_KEY以参数形式传入
+		2.grafana可以直接介入aws cloudwatch

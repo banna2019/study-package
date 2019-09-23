@@ -1,0 +1,15 @@
+[Unit]
+Description=mysqld_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/opt/mysqld_exporter/mysqld_exporter --config.my-cnf=/opt/mysqld_exporter/.my.cnf
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

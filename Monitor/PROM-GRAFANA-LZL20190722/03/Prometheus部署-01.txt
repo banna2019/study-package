@@ -1,0 +1,40 @@
+
+Prometheus部署
+
+	1.二进制部署
+		二进制部署：https://prometheus.io/docs/prometheus/latest/getting_started/
+			wget https://github.com/prometheus/prometheus/releases/download/v2.11.1/prometheus-2.11.1.linux-amd64.tar.gz
+			tar xf prometheus-2.11.1.linux-amd64.tar.gz 
+			mv prometheus-2.11.1.linux-amd64 /opt/prometheus
+			mkdir -pv /opt/prometheus/data
+			chmod -R 0755 /opt/prometheus
+			useradd prometheus -d /opt/prometheus -s /sbin/nologin
+			chown -R prometheus.prometheus /opt/prometheus
+
+			vim /usr/lib/systemd/system/prometheus.service
+			chmod 0644 /usr/lib/systemd/system/prometheus.service
+
+			systemctl daemon-reload
+			systemctl start prometheus
+			netstat -nptl
+			systemctl status prometheus
+
+			
+	2.Docker部署
+		Docker部署：https://prometheus.io/docs/prometheus/latest/installation/
+			docker run -d -p 9090:9090 -v /opt/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+			
+			
+	3.Web控制台
+		访问Web：http://localhost:9090
+		
+		
+	4.配置Prometheus监控本身
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    static_configs:
+    - targets: ['localhost:9090']
+	
+		
+		curl -X POST "http://localhost:9090/-/reload" 		#热加载prometheus的配置文件需要在配置"--web.enable-lifecycle"参数

@@ -1,0 +1,8 @@
+groups:
+- name: node_rules
+  interval: 10s
+  rules:
+  - record: instance:node_cpu:avg_rate5m
+    expr: 100 - avg(irate(node_cpu_seconds_total{job="node",mode="idle"}[5m])) by (instance) * 100
+    labels:
+      metric_type: aggregation

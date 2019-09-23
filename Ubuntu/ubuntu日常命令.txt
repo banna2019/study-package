@@ -1,0 +1,34 @@
+
+sudo dpkg -i package_file.deb		
+sudo dpkg -r package_name
+sudo alien package_file.rpm		.rpm文件转为.deb 文件
+
+
+apt list|grep mysql 	#搜索软件包
+vim /etc/apt/sources.list 	#修改软件包源配置
+	deb http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted 
+	deb http://mirrors.aliyun.com/ubuntu/ bionic-proposed universe multiverse
+	deb-src http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted
+	deb-src http://mirrors.aliyun.com/ubuntu/ bionic-proposed universe multiverse
+
+	清华源:
+		deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse
+		deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse
+		deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse
+		deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-security main restricted universe multiverse
+
+
+vim /etc/network/interfaces		#配置静态IP
+auto ens33
+iface ens33 inet static
+address 192.168.56.54
+netmask 255.255.255.0
+gateway 192.168.56.2
+dns-nameservers 127.0.0.53
+
+
+sudo ip addr flush ens33		#刷新IP地址
+sudo systemctl restart networking.service
+
+sudo vim /etc/NetworkManager/NetworkManager.conf
+sudo service network-manager restart

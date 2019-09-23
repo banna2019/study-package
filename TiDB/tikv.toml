@@ -1,0 +1,60 @@
+# TiKV config template
+#  Human-readable big numbers:
+#   File size(based on byte): KB, MB, GB, TB, PB
+#    e.g.: 1_048_576 = "1MB"
+#   Time(based on ms): ms, s, m, h
+#    e.g.: 78_000 = "1.3m"
+
+
+[readpool.storage]
+stack-size = "1MB"
+
+[readpool.coprocessor]
+stack-size = "1MB"
+
+[server]
+labels = { host = "tikv1" }
+
+[storage]
+max-key-size = 4096
+
+[storage.block-cache]
+
+[pd]
+# This section will be overwritten by command line parameters
+
+[metric]
+
+[raftstore]
+raftdb-path = ""
+sync-log = true
+
+[coprocessor]
+
+[rocksdb]
+wal-dir = ""
+max-open-files = 65535
+
+[rocksdb.defaultcf]
+write-buffer-size = "20480MB"
+
+[rocksdb.defaultcf.titan]
+
+[rocksdb.lockcf]
+write-buffer-size = "20480MB"
+
+[rocksdb.titan]
+
+[rocksdb.writecf]
+write-buffer-size = "20480MB"
+
+[raftdb]
+
+[raftdb.defaultcf]
+
+[security]
+ca-path = ""
+cert-path = ""
+key-path = ""
+
+[import]

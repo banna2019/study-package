@@ -1,0 +1,95 @@
+
+一、ingress tls:
+	TLS认证(以下操作是在Traefik-配置-00的基础上进行操作):
+		备注: 使用 example-traefik目录下yaml文件
+	
+		在现在大部分场景下面我们都会使用https来访问我们的服务,这里将使用一个自签名的证书,当然你有在一些正规机构购买的CA 证书是最好的,这样任何人访问你的服务的时候都是受浏览器信任的证书.使用下面的openssl命令生成CA证书:
+			openssl req -newkey rsa:2048 -nodes -keyout tls.key -x509 -days 365 -out tls.crt
+
+		现在有了证书,可以使用kubectl创建一个secret对象来存储上面的证书:
+			kubectl create secret generic traefik-cert --from-file=tls.crt --from-file=tls.key -n kube-system
+			kubectl get  secret -n kube-system
+
+	配置Traefik:
+		前面使用的是Traefik的默认配置,现在来配置Traefik,让其支持https:
+
+defaultEntryPoints = ["http","https"]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+      entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+      [[entryPoints.https.tls.certificates]]
+      CertFile = "/ssl/tls.crt"
+      KeyFile = "/ssl/tls.key"
+
+[metrics]
+  [metrics.prometheus]
+    entryPoint = "traefik"
+    buckets = [0.1, 0.3, 1.2, 5.0]
+
+	备注: 这里的metrics段配置是暴露,tradfik metrics接口的配置
+	
+    上面的配置文件中配置了http和https两个入口,并且配置了将http服务强制跳转到https服务,这样所有通过traefik进来的服务都是https的,
+	要访问https服务,当然就得配置对应的证书了,可以看到指定了CertFile和KeyFile两个文件,由于traefik pod中并没有这两个证书,
+	所以要想办法将上面生成的证书挂载到Pod中去,secret对象可以通过volume形式挂载到Pod中？
+	至于上面的traefik.toml这个文件要怎么让traefik pod 能够访问到呢？可以将上面的traefik.toml配置文件通过一个ConfigMap对象挂载到traefik pod中去:
+
+      #创建traefik toml的configmap
+      kubectl create configmap traefik-conf --from-file=traefik.toml -n kube-system
+      kubectl describe cm traefik-conf -n kube-system
+
+    traefik-deployment.yaml			#重新编辑traefik deployment添加443和configfile
+	kubectl apply -f traefik-deployment.yaml
+	kubectl get pod,svc -n kube-system
+    kubectl describe pod traefik-ingress-controller-54bd9c4f48-2nw2x -n kube-system
+	kubectl logs -f traefik-ingress-controller-54bd9c4f48-2nw2x  -n kube-system
+	
+	通过域名解析访问traefik(域名访问需要做本地hosts解析):
+		https://traefik.haimaxy.com
+		
+	tradfik的metrics取值测试:
+		kubectl get pod,svc -n kube-system
+		curl 10.101.2.42:8080/metrics			#IP为集群内部分配的IP,8080为traefik的服务端口
+	
+	
+	配置3个新的ingress的Deployment和Service:
+    kubectl apply -f backend.yaml
+	kubectl get pods
+	kubectl get pod --all-namespaces
+	
+	配置新的example-ingress的服务:
+    kubectl apply -f example-ingress.yaml
+
+	kubectl get ingress
+	kubectl describe ingress example-web-app
+	
+	通过HTTPS方式访问(域名访问需要做本地hosts解析):
+		https://example.haimaxy.com/
+		https://example.haimaxy.com/s1
+		https://example.haimaxy.com/s2
+
+
+二、扩展
+	可能有这样的需求,就是不同的ingress对象是供不同的域名进行使用的,然后不同的域名的证书还不相同,
+	想使用上面traefik提供的统一的https证书就不行了,这个时候就可以单独为当前的服务提供单独的证书就可以,
+	同样用证书文件创建一个secret对象,然后在ingress对象中声明一个tls对象即可,比如上面的example.haimaxy.com可以单独指定一个证书文件:
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: example-web-app
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  tls:
+    - secretName: traefik-cert
+  rules:
+  - host:
+...
+
+参考博客: https://www.qikqiak.com/k8s-book/docs/41.ingress%20config.html

@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus
+Documentation=https://prometheus.io/
+After=network.target
+ 
+[Service]
+Type=simple
+User=prometheus
+ExecStart=/usr/local/prometheus/prometheus --config.file=/usr/local/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus --web.enable-lifecycle --web.enable-admin-api
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

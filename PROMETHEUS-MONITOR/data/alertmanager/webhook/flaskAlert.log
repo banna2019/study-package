@@ -1,0 +1,11 @@
+
+INFO:werkzeug: * Running on http://0.0.0.0:9119/ (Press CTRL+C to quit)
+INFO:werkzeug:127.0.0.1 - - [02/Aug/2019 18:29:38] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [08/Aug/2019 15:48:07] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:172.17.0.2 - - [08/Aug/2019 19:07:20] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:172.17.0.2 - - [08/Aug/2019 19:08:29] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:172.17.0.2 - - [08/Aug/2019 19:09:39] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:172.17.0.2 - - [08/Aug/2019 19:10:54] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:172.17.0.2 - - [08/Aug/2019 19:11:04] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:172.17.0.2 - - [08/Aug/2019 19:12:14] "POST /alert HTTP/1.1" 200 -
+INFO:werkzeug:172.17.0.2 - - [08/Aug/2019 19:19:34] "POST /alert HTTP/1.1" 200 -

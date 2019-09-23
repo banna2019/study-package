@@ -1,0 +1,50 @@
+
+
+cat >/etc/yum.repos.d/mysql.repo<EOF
+# Enable to use MySQL 5.7
+[mysql57-community]
+name=MySQL 5.7 Community Server
+baseurl=http://repo.mysql.com/yum/mysql-5.7-community/el/7/$basearch/
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-mysql
+EOF
+
+
+mysql -h banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com -uroot -p27jq7bhfO81B6qqNZfx6jK0R
+
+mkdir -pv /data/{promedata,condata,mydata,grafanadata}
+chmod -R 777 /data
+
+
+docker create \
+-v /data/promedata:/opt/prometheus/data \
+-v /data/condata:/opt/consul-data \
+-v /data/mydata:/var/lib/mysql \
+-v /data/grafanadata:/var/lib/grafana \
+--name pmm-data \
+percona/pmm-server:1.17 /bin/true
+
+docker run -d \
+-p 80:80 \
+--volumes-from pmm-data \
+--name pmm-server \
+-e DISABLE_UPDATES=true \
+--restart always \
+percona/pmm-server:1.17
+
+
+
+create user 'monitor'@'%' identified by 'monitor123';
+GRANT SELECT,PROCESS,SUPER,REPLICATION CLIENT,RELOAD ON *.* TO 'monitor'@'%' WITH MAX_USER_CONNECTIONS 10;
+GRANT SELECT,UPDATE,DELETE,DROP ON performance_schema.* TO 'monitor'@'%';
+flush privileges;
+
+rpm --import https://www.percona.com/redir/downloads/percona-release/RPM-GPG-KEY-percona
+yum install https://www.percona.com/redir/downloads/percona-release/redhat/percona-release-0.1-4.noarch.rpm
+
+yum install https://www.percona.com/downloads/pmm/1.12.0/binary/redhat/7/x86_64/pmm-client-1.12.0-1.el7.x86_64.rpm -y
+
+pmm-server上执行添加:
+pmm-admin config --server 10.101.1.5
+pmm-admin add mysql --user root --password '27jq7bhfO81B6qqNZfx6jK0R' --host banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com --port 3306 rds01

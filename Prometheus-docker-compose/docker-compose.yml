@@ -1,0 +1,103 @@
+version: '3.4'
+services:
+  prometheus:
+    image: prom/prometheus:v2.12.0
+    network_mode: host
+    hostname: prometheus
+    restart: always
+    volumes:
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+      - /data/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /data/prometheus/rules/rules.yml:/etc/prometheus/rules/rules.yml
+      - /data/prometheus/data:/prometheus
+      - /data/prometheus/discovery:/etc/prometheus/discovery
+    command:
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - '9090:9090'
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 100m
+        
+  node-exporter:
+    image: prom/node-exporter
+    network_mode: host
+    hostname: node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command: 
+      - '--path.procfs=/host/proc' 
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - '9100:9100'
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 100m
+        
+  cadvisor:
+    image: google/cadvisor
+    network_mode: host
+    hostname: alertmanager
+    restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - 8080:8080
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 100m
+
+  alertmanager:
+    image: prom/alertmanager:v0.18.0
+    network_mode: host
+    hostname: alertmanager
+    restart: always
+    volumes:
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+      - /data/alertmanager/config/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - /data/alertmanager/data:/alertmanager
+    ports:
+      - '9093:9093'
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 100m
+        
+  grafana:
+    image: grafana/grafana:6.3.5
+    network_mode: host
+    hostname: grafana
+    restart: always
+    volumes:
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+      - '/data/grafana/config/grafana.ini:/etc/grafana/grafana.ini'
+      - '/data/grafana/data:/var/lib/grafana'
+    ports:
+      - '3000:3000'
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 100m
+        

@@ -1,0 +1,29 @@
+一、自建grafana镜像
+go get github.com/grafana/grafana
+cd /root/go/src/github.com/grafana/grafana/grafana
+
+docker build -t grafana:v1.0 .
+
+mkdir -pv /data/grafana/{data,config}
+chmod -R 0777 /data
+
+二、启动容器
+docker run -d --name grafana-banna -p 3000:3000 -v /data/grafana/data:/var/lib/grafana -v /data/grafana/config:/etc/grafana  grafana:v1.0
+docker run -d --name grafana-banna -p 3000:3000 -v /data/grafana/data:/var/lib/grafana  grafana:v1.0
+
+	-v /data/grafana/grafana:/etc/grafana 		#需要指定grafana.ini
+
+#在容器中安装插件
+	grafana-piechart-panel:
+		docker exec 17e6aafc7f64 /usr/share/grafana/bin/grafana-cli --pluginsDir /var/lib/grafana/plugins/ plugins install grafana-piechart-panel
+
+		docker exec 17e6aafc7f64 /usr/share/grafana/bin/grafana-cli --pluginsDir /var/lib/grafana/plugins/ plugins install percona-percona-app
+		docker exec 17e6aafc7f64 /usr/share/grafana/bin/grafana-cli --pluginsDir /var/lib/grafana/plugins/ plugins install pmm-singlestat-panel
+
+
+		docker exec -u root -it 17e6aafc7f64 /bin/bash
+		docker exec -u root 17e6aafc7f64 chown -R grafana.grafana /var/lib/grafana/plugins/pmm-singlestat-panel
+
+#grafana-aws
+	DIR:
+		/usr/share/grafana/.aws

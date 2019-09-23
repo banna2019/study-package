@@ -1,0 +1,223 @@
+
+告警:
+1.部署Alertmanager:
+	a.部署Alertmanager
+		地址1：https://prometheus.io/download/
+		地址2：https://github.com/prometheus/alertmanager/releases
+		
+		wget https://github.com/prometheus/alertmanager/releases/download/v0.18.0/alertmanager-0.18.0.linux-amd64.tar.gz
+		tar xf alertmanager-0.18.0.linux-amd64.tar.gz 
+		mv alertmanager-0.18.0.linux-amd64 /opt/alertmanager
+
+		chown -R prometheus.root /opt/alertmanager/
+		chmod -R 0755 /opt/alertmanager
+		chown -R prometheus.root /opt/alertmanager
+		vim /usr/lib/systemd/system/alertmanager.service
+		chmod 0644 /usr/lib/systemd/system/alertmanager.service
+
+		vim /opt/alertmanager/alertmanager.yml
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.163.com:25'
+  smtp_from: 'jiajia664878380@163.com'
+  smtp_auth_username: 'jiajia664878380@163.com'
+  smtp_auth_password: 'JinG602162545'
+  smtp_require_tls: false
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1m
+  receiver: 'mail'
+receivers:
+- name: 'mail'
+  email_configs:
+  - to: 'jiajia664878380@163.com
+  
+		./amtool check-config alertmanager.yml
+		systemctl daemon-reload
+		systemctl start alertmanager
+		systemctl status alertmanager
+
+
+		访问alertmanage:
+				IP:9093
+	
+	b.配置Prometheus与Alertmanager通信
+		vim prometheus.yml
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+       - localhost:9093
+		
+	c.在Prometheus中创建告警规则
+		vim prometheus.yml
+rule_files:
+  - "rules/*.yml"
+  
+	
+	
+	chmod -R 0755 /opt/prometheus
+	chown -R prometheus.root /opt/prometheus
+	./promtool  check config prometheus.yml
+	curl -X POST "http://localhost:9090/-/reload"
+
+2.配置Prometheus与Alertmanager通信:
+	截图(01)
+	
+	
+
+3.在Prometheus中创建告警规则:
+	vim rules/test.yml
+
+groups:
+- name: general.rules
+  rules:
+
+  - alert: InstanceDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: error
+    annotations:
+      summary: "Instance {{ $labels.instance }} 停止工作"
+      description: "{{ $labels.instance }} job {{ $labels.job }} 已经停止5分钟以上."
+
+
+	https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/
+	
+	
+	
+4.告警状态:
+	•Inactive: 这里什么都没有发生.
+	•Pending: 已触发阈值,但未满足告警持续时间
+	•Firing: 已触发阈值且满足告警持续时间.警报发送给接受者
+	截图(02)
+	
+	
+5.告警分配:
+route:
+  receiver: 'default-receiver'
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  group_by: [cluster, alertname]
+routes:
+- receiver: 'database-pager'
+    group_wait: 10s
+    match_re:
+      service: mysql|cassandra
+- receiver: 'frontend-pager'
+    group_by: [product, environment]
+    match:
+      team: frontend
+receivers:
+- name: ‘database-pager'
+  email_configs:
+  - to: 'jiajia664878380@163.com'
+- name: ‘frontend-pager'
+  email_configs:
+  - to: 'jiajia664767380@163.com'
+
+
+
+6.告警收敛(分组,抑制,静默):
+	截图(03)
+	
+	
+	告警收敛(分组,抑制,静默):
+		分组(group): 将类似性质的警报分类为单个通知
+			1.减少告警消息的数量
+			2.同类告警的聚合帮助运维排查问题
+
+			group_by: ['alertnname'] #根据标签进行分组
+			group_wait_: 10s		#发送告警等待时间
+			group_interval: 10s	 	#发送告警间隔时间
+			repeat_interval: 1m		#重复告警发送间隔
+
+		抑制(Inhibition) 当警报发出后,停止重复发送由此警报引发的其他警报
+			1.消除冗余的告警
+
+			inhibit_rules:
+			  - source_match:
+			      severity: 'critical'
+			    target_match:
+			       severity: 'warning'
+			    equal: ['id','instance']
+
+		静默(Silences): 是一种简单的特定时间静音提醒的机制
+			截图(06)
+			截图(07)
+			1.阻止预期的告警(通常是在维护的阶段)
+	
+	
+7.Prometheus一条告警怎么触发的？
+	截图(04)
+
+	1.
+		global:
+	      scrape_interval:
+	      evaluation_inteval:
+	      scrape_timeout: 
+	2.
+		for
+	3.
+		route:
+		  group_by: ['alertname']
+		  group_wait: 10s
+		  group_interval: 10s
+		  repeat_interval: 1m
+	
+
+8.编写告警规则案例:
+示例：
+groups:
+- name: example
+  rules:
+  
+#Alert for any instance that is unreachable for >5 minutes.
+- alert: InstanceDown
+  expr: up == 0
+  for: 5m
+  labels:
+    severity: page
+  annotations:
+    summary: "Instance {{ $labels.instance }} down"
+    description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+
+vim rules/node.yml
+groups:
+- name: node.rules
+  rules:
+  - alert: NodeFilesystemUsage
+    expr: 100 - (node_filesystem_free_bytes{fstype=~"ext4|xfs"}/node_filesystem_size_bytes{fstype=~"ext4|xfs"}*100) >80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Instance {{ $labels.instance }} : {{ $labels.mountpoint }} 分区使用率过高"
+      description: "{{ $labels.instance }} : {{ $labels.mountpoint }} 分区使用率大于80% (当前值 : {{ $value }})" 
+  - alert: NodeMemoryUsage
+    expr: 100 - (node_memory_MemFree_bytes+node_memory_Cached_bytes+node_memory_Buffers_bytes)/node_memory_MemTotal_bytes*100 >90
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Instance {{ $labels.instance }} 内存使用率过高"
+      description: "{{ $labels.instance }} 内存使用率大于90% (当前值 : {{ $value }})" 
+  - alert: NodeCPUUsage
+    expr: 100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m]))by(instance)*100) > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Instance {{ $labels.instance }} CPU使用率过高"
+      description: "{{ $labels.instance }} CPU使用率大于90% (当前值 : {{ $value }})" 
+ 
+
+     ./promtool  check config prometheus.yml
+      curl -X POST "http://localhost:9090/-/reload"
+

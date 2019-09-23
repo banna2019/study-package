@@ -1,0 +1,35 @@
+
+对于集群的监控一般需要考虑以下几个方面:
+	Kubernetes节点的监控：比如节点的cpu、load、disk、memory等指标
+	内部系统组件的状态：比如 kube-scheduler、kube-controller-manager、kubedns/coredns等组件的详细运行状态
+	编排级的metrics：比如 Deployment 的状态、资源请求、调度和API延迟等数据指标
+	
+	
+监控方案:
+	Kubernetes集群的监控方案目前主要有以下几种方案：
+		Heapster：Heapster是一个集群范围的监控和数据聚合工具,以Pod的形式运行在集群中
+			截图(kubernetes_monitoring_heapster.png)
+			
+			除了Kubelet/cAdvisor之外,还可以向Heapster添加其他指标源数据,比如kube-state-metrics
+			需要注意的是Heapster已经被废弃了,后续版本中会使用metrics-server代替.
+		
+		cAdvisor：cAdvisor是Google开源的容器资源监控和性能分析工具,它是专门为容器而生,本身也支持 Docker容器,在Kubernetes中,
+				  不需要单独去安装,cAdvisor作为kubelet内置的一部分程序可以直接使用.
+
+		Kube-state-metrics：kube-state-metrics通过监听API Server生成有关资源对象的状态指标,比如Deployment、Node、Pod,
+		                    需要注意的是kube-state-metrics只是简单提供一个metrics数据,并不会存储这些指标数据,所以可以使用Prometheus来抓取这些数据然后存储.
+		metrics-server：metrics-server也是一个集群范围内的资源数据聚合工具,是Heapster的替代品,同样的,metrics-server也只是显示数据,并不提供数据存储服务.
+		
+		不过kube-state-metrics和metrics-server之间还是有很大不同的,二者的主要区别如下:
+			kube-state-metrics 主要关注的是业务相关的一些元数据,比如 Deployment、Pod、副本状态等
+			metrics-server 主要关注的是资源度量 API 的实现,比如 CPU、文件描述符、内存、请求延时等指标
+			
+
+监控集群节点:
+	首先来监控集群的节点,要监控节点其实已经有很多非常成熟的方案了,比如Nagios、zabbix,甚至自己来收集数据也可以,通过Prometheus来采集节点的监控指标数据,
+	可以通过node_exporter来获取,顾名思义,node_exporter就是抓取用于采集服务器节点的各种运行指标,目前node_exporter支持几乎所有常见的监控点,
+	比如conntrack,cpu,diskstats,filesystem,loadavg,meminfo,netstat等,详细的监控点列表可以参考其Github repo。
+
+	可以通过DaemonSet控制器来部署该服务,这样每一个节点都会自动运行一个这样的Pod,如果从集群中删除或者添加节点后,也会进行自动扩展.
+	
+	node-exporter.yaml

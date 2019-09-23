@@ -1,0 +1,95 @@
+
+一、自建nginx-vts-exporter镜像
+cd go/src/github.com/hnlq715/nginx-vts-exporter/
+wget https://github.com/hnlq715/nginx-vts-exporter/releases/download/v0.10.3/nginx-vts-exporter-0.10.3.linux-amd64.tar.gz
+tar xf nginx-vts-exporter-0.10.3.linux-amd64.tar.gz
+cp nginx-vts-exporter-0.10.3.linux-amd64/nginx-vts-exporter .
+
+docker build -t nginx-vts-exporter:v1.0 . 
+
+
+docker run --name nginx-vts-exporter-banna -d --net="host" --pid="host" --env NGINX_STATUS="http://localhost/status/format/json" nginx-vts-exporter:v1.0
+
+
+curl http://127.0.0.1:81/status/format/json
+
+
+二、yum安装nginx插件添加(重新编译把"nginx-module-vts"编译进nginx当中)
+nginx -V
+mv /sbin/nginx{,.bak}
+cp -rp /etc/nginx{,.bak}
+
+
+wget http://nginx.org/download/nginx-1.12.2.tar.gz
+tar xf nginx-1.12.2.tar.gz
+cd nginx-1.12.2
+
+wget https://github.com/hnlq715/nginx-vts-exporter/releases/download/v0.10.3/nginx-vts-exporter-0.10.3.linux-amd64.tar.gz
+tar xf nginx-vts-exporter-0.10.3.linux-amd64.tar.gz
+
+./configure --prefix=/usr/share/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib64/nginx/modules --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --http-client-body-temp-path=/var/lib/nginx/tmp/client_body --http-proxy-temp-path=/var/lib/nginx/tmp/proxy --http-fastcgi-temp-path=/var/lib/nginx/tmp/fastcgi --http-uwsgi-temp-path=/var/lib/nginx/tmp/uwsgi --http-scgi-temp-path=/var/lib/nginx/tmp/scgi --pid-path=/run/nginx.pid --lock-path=/run/lock/subsys/nginx --user=nginx --group=nginx --with-file-aio --with-ipv6 --with-http_auth_request_module --with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-http_addition_module --with-http_xslt_module=dynamic --with-http_image_filter_module=dynamic --with-http_geoip_module=dynamic --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_degradation_module --with-http_slice_module --with-http_stub_status_module --with-http_perl_module=dynamic --with-mail=dynamic --with-mail_ssl_module --with-pcre --with-pcre-jit --with-stream=dynamic --with-stream_ssl_module --with-google_perftools_module --with-debug --add-module=./nginx-module-vts
+
+\cp objs/nginx /usr/sbin/nginx 
+\cp objs/nginx /sbin/nginx
+
+
+systemctl restart nginx
+
+
+
+
+
+四、nginx配置文件调整:
+
+log_format graylog2_json escape=json '{ "timestamp": "$time_iso8601", '
+                     '"remote_addr": "$remote_addr", '
+                     '"body_bytes_sent": $body_bytes_sent, '
+                     '"request_time": $request_time, '
+                     '"response_status": $status, '
+                     '"request": "$request", '
+                     '"request_method": "$request_method", '
+                     '"host": "$host",'
+                     '"upstream_cache_status": "$upstream_cache_status",'
+                     '"upstream_addr": "$upstream_addr",'
+                     '"http_x_forwarded_for": "$http_x_forwarded_for",'
+                     '"http_referrer": "$http_referer", '
+                     '"http_user_agent": "$http_user_agent" }';
+	
+    access_log  logs/access.log  graylog2_json;	
+					 
+					 
+server
+{
+    listen 80;
+    server_name www.localhost.com;
+    access_log syslog:server=10.101.1.98:12301 graylog2_json;
+ 
+    location  / {
+        return 301 https://$server_name$request_uri;
+    }
+    location /vts_status {
+        vhost_traffic_status_display;
+        vhost_traffic_status_display_format html;
+        allow all;
+        #deny all;
+    }
+}
+
+
+
+五、调试:
+	http://54.169.74.39:81/status
+	http://54.169.74.39:81/status/format/json
+	
+	截图(nginx-vts-exporter01)
+	截图(nginx-vts-exporter02)
+	
+	
+六、Grafana-template:
+	Nginx Stats		49,1623
+	Nginx VTS Stats	2949	
+	NGINX/API/Dashboard	10442
+	
+	NGINX(officail)  5063
+	
+	

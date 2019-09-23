@@ -1,0 +1,118 @@
+
+Network Netstat TCP /proc/net/snmp
+ 
+
+1.TCP Segments
+	type: Graph
+	Unit: short
+	Label: Segments out (-)/in (+)
+
+	InCsumErrors - 接收的带有校验和错误的报文数(5分钟内)
+	metrics:
+		irate(node_netstat_Tcp_InCsumErrors{instance=~"$node:$port",job=~"$job"}[5m])
+
+	InErrs-TCP接收的错误报文数(5分钟内)(例如：错误的校验和)
+	metrics:
+		irate(node_netstat_Tcp_InErrs{instance=~"$node:$port",job=~"$job"}[5m])
+
+	InSegs-TCP接收的目前所有建立连接的错误报文数(5分钟内)(例如：错误的校验和)
+	metrics:
+		irate(node_netstat_Tcp_InSegs{instance=~"$node:$port",job=~"$job"}[5m])
+
+	OutRsts-TCP发送的报文数(5分钟内)(包括 RST flag)
+	metrics:
+		irate(node_netstat_Tcp_OutRsts{instance=~"$node:$port",job=~"$job"}[5m])
+
+
+	OutSegs-TCP发送的报文数(5分钟内)(包括当前连接的段但是不包括重传的段)
+	metrics:
+		irate(node_netstat_Tcp_OutSegs{instance=~"$node:$port",job=~"$job"}[5m])
+
+	RetransSegs-TCP重传报文数(5分钟内)
+	metrics:
+		irate(node_netstat_Tcp_RetransSegs{instance=~"$node:$port",job=~"$job"}[5m])
+
+
+
+2.TCP Connections
+	type: Graph
+	Unit: short
+	Label: Connections
+	
+	CurrEstab-当前状态为ESTABLISHED或CLOSE-WAIT的TCP连接数
+	metrics:
+		node_netstat_Tcp_CurrEstab{instance=~"$node:$port",job=~"$job"}
+
+	MaxConn-限制实体可以支持的TCP最大连接总数
+	metrics:
+		node_netstat_Tcp_MaxConn{instance=~"$node:$port",job=~"$job"}
+
+
+3.TCP Retransmission
+	type: Graph
+	Unit: milliseconds
+	Label: Milliseconds
+
+	RtoAlgorithm-TCP重传超时时间
+	metrics:
+		node_netstat_Tcp_RtoAlgorithm{instance=~"$node:$port",job=~"$job"}
+
+	RtoMax-TCP允许的重传超时的最大值,以毫秒为单位
+	metrics:
+		node_netstat_Tcp_RtoMax{instance=~"$node:$port",job=~"$job"}
+
+	RtoMin-TCP允许的重传超时的最小值,以毫秒为单位
+	metrics:
+		node_netstat_Tcp_RtoMin{instance=~"$node:$port",job=~"$job"}
+
+
+4.TCP Segments
+	type: Graph
+	Unit: short
+	Label: Connections
+
+	ActiveOpens-已从CLOSED状态直接转换到SYN-SENT状态的TCP平均连接数(5分钟内)
+	metrics:
+		irate(node_netstat_Tcp_ActiveOpens{instance=~"$node:$port",job=~"$job"}[5m])
+
+	AttemptFails-从SYN-SENT和SYN-RCVD转换到CLOSED状态的TCP平均连接数(5分钟内)
+	metrics:
+		irate(node_netstat_Tcp_AttemptFails{instance=~"$node:$port",job=~"$job"}[5m])
+
+	EstabResets-从ESTABLISHED状态或CLOSE-WAIT状态直接转换到CLOSED状态的TCP平均连接数(5分钟内)
+	metrics:
+		irate(node_netstat_Tcp_EstabResets{instance=~"$node:$port",job=~"$job"}[5m])
+
+	PassiveOpens-已从LISTEN状态直接转换到SYN-RCVD状态的TCP平均连接数(5分钟内)
+	metrics:
+		irate(node_netstat_Tcp_PassiveOpens{instance=~"$node:$port",job=~"$job"}[5m])
+
+
+
+5.TCP DROPS/SynCookie
+	type: Graph
+	Unit: short
+	Label: Counter
+
+	ListenDrops - 监听队列连接丢弃数
+	metrics:
+		irate(node_netstat_TcpExt_ListenDrops{instance=~"$node:$port",job=~"$job"}[5m])
+
+	ListenOverflows-监听socket的队列溢出
+	metrics:
+		irate(node_netstat_TcpExt_ListenOverflows{instance=~"$node:$port",job=~"$job"}[5m])
+
+	SyncookiesFailed-接收的无效的SYN cookies的数量
+	metrics:
+		irate(node_netstat_TcpExt_SyncookiesFailed{instance=~"$node:$port",job=~"$job"}[5m])
+
+	SyncookiesRecv-接收的SYN cookies的数量
+	metrics:
+		irate(node_netstat_TcpExt_SyncookiesRecv{instance=~"$node:$port",job=~"$job"}[5m])
+
+	SyncookiesSent-发送的SYN cookies的数量
+	metrics:
+		irate(node_netstat_TcpExt_SyncookiesSent{instance=~"$node:$port",job=~"$job"}[5m])
+
+
+备注: 参考博客: https://www.cnblogs.com/qianyuliang/p/10542713.html

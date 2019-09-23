@@ -1,0 +1,129 @@
+一、安装系统依赖包
+	yum install gcc gcc-c++ perl wget git lrzs vim telnet epel-release -y
+	yum install python-pip -y
+
+二、备份脚本部署
+	2.1.binlog2sql工具部署
+		vim /opt/2sql-install.sh
+
+#!/bin/bash
+
+source /etc/profile
+
+PYPTAH='/bin/python'
+SQLFILE='/opt/binlog2sql/binlog2sql/binlog2sql.py'
+
+yum install gcc gcc-c++ epel-release -y
+yum install python-pip -y
+
+
+cd /opt && \
+/usr/bin/git clone https://github.com/danfengcao/binlog2sql.git && \
+cd /opt/binlog2sql/ && \
+pip install -r requirements.txt && \
+echo "alias binlog2sql='${PYPTAH} ${SQLFILE}'" >> /root/.bashrc
+source /root/.bashrc
+
+
+	2.2.binlog日志文件部署脚本部署
+		vim /data/project_name/scripts/baklogs.sh
+		
+#!/bin/sh
+
+BACKUP_BIN=/bin/mysqlbinlog
+LOCAL_BACKUP_DIR=/data/backup
+BACKUP_LOG=/data/logs/bakbinlog.log
+REMOTE_HOST=banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com
+REMOTE_PORT=3306
+SERVER_ID=20003306
+REMOTE_USER=root
+REMOTE_PASS=27jq7bhfO81B6qqNZfx6jK0R
+
+#time to wait before reconnecting after failure
+SLEEP_SECONDS=10
+DE=`date +%Y%m%d`
+
+##create local_backup_dir if necessary
+if [ ! -d ${LOCAL_BACKUP_DIR} ];then
+    mkdir -pv ${LOCAL_BACKUP_DIR} && mkdir -pv /data/logs
+else
+	cd ${LOCAL_BACKUP_DIR}
+fi
+
+##运行while循环,连接断开后等待指定时间,重新连接
+while :
+FIRST_BINLOG=$(mysql --host=${REMOTE_HOST} --user=${REMOTE_USER} --password=${REMOTE_PASS} -e 'show binary logs' 2>/dev/null|grep -v "Log_name"|awk '{print $1}'|head -n 1)
+do
+  if [ `ls -A "${LOCAL_BACKUP_DIR}" |wc -l` -eq 0 ];then
+     LAST_FILE=${FIRST_BINLOG} 
+  else
+     LAST_FILE=`ls -l ${LOCAL_BACKUP_DIR} |tail -n 1 |awk '{print $9}'`
+  fi
+  ${BACKUP_BIN} -R --host=${REMOTE_HOST} --user=${REMOTE_USER} --password=${REMOTE_PASS} --raw ${LAST_FILE} -r ${LOCAL_BACKUP_DIR}/  --stop-never --stop-never-slave-server-id=${SERVER_ID} 2>/dev/null 
+  echo "`date +"%Y/%m/%d %H:%M:%S"` mysqlbinlog停止,返回代码：$?" | tee -a ${BACKUP_LOG}
+  echo "${SLEEP_SECONDS}秒后再次连接并继续备份" | tee -a ${BACKUP_LOG}  
+  sleep ${SLEEP_SECONDS}
+done
+
+
+	2.3.binlog转sql脚本部署
+		vim /data/project_name/scripts/sql.sh
+		
+#!/bin/bash
+
+BINLOG2_CMD='/data/scripts/binlog2sql/binlog2sql/binlog2sql.py'
+SQL_DIR='/data/sql'
+BINLOG_DIR='/data/backup'
+SLEEP_SECONDS=3600
+SQL_LOG='/data/logs/to-sql.logs'
+RDS_HOST='banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com'
+RDS_USER='root'
+RDS_PWD='27jq7bhfO81B6qqNZfx6jK0R'
+
+if [ -d ${BINLOG_DIR} ];then
+   cd ${BINLOG_DIR}
+else
+   echo "${BINLOG_DIR} directory is does not exist!"
+   exit 1
+fi
+
+
+while :
+do
+  if [ `ls -A "${BINLOG_DIR}" |wc -l` -lt 10 ];then
+      echo "${SLEEP_SECONDS}秒后再次连接并继续备份" | tee -a ${SQL_LOG}
+      sleep ${SLEEP_SECONDS}
+  else
+     for i in `ls *`:
+         do
+             ${BINLOG2_CMD} -h ${RDS_HOST}  -u${RDS_USER} -p${RDS_PWD} --start-file="$i" --stop-file="$i" >>${SQL_DIR}/${i}.sql && rm ${i} -rf 2>&1 >>/data/logs/to-sql.logs
+         done
+  fi
+done
+
+
+	2.4.aws s3 sync脚本部署
+		vim /data/project_name/scripts/sync.sh
+		
+#!/bin/bash
+
+BACKUP_SYN=/bin/aws
+LOCAL_SQL_DIR=/data/project_name/sql
+BACKUP_LOG=/data/project_name/logs/sync.log
+REMOTE_DIR='s3://fullbinlogbakup/project_name'
+
+#time to wait before reconnecting after failure
+SLEEP_SECONDS=10
+DE=`date +"%Y-%m-%d %H:%M:%S"`
+
+##create local_backup_dir if necessary
+if [ ! -d ${LOCAL_SQL_DIR} ];then
+    mkdir -pv ${LOCAL_SQL_DIR} && mkdir -pv /data/logs
+else
+	cd ${LOCAL_SQL_DIR}
+fi
+
+echo "${DE}"  >>${BACKUP_LOG}
+${BACKUP_SYN} s3 sync . ${REMOTE_DIR} 2>&1 >>${BACKUP_LOG}
+
+	备注: 如上脚本中的project_name,需替换成真是的项目名称

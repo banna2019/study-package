@@ -1,0 +1,36 @@
+
+一、云平台安全组开放
+	nodes-SSH:
+		添加IP白名单(22-PORT)
+		ICMP
+	nodes-MQ:
+		8883		0.0.0.0/0
+		19999		0.0.0.0/0
+		80			0.0.0.0/0
+
+
+
+二、docker启动容器
+
+docker build -t alpine-nginx:v1.0 .
+
+docker run -itd \
+-e LISTEN_PORT=19999 \
+-e BACKEND_PORT=1883 \
+-e MQTT_DNS=elb-006-MQ-d5c144fcd5223eff.elb.ap-southeast-1.amazonaws.com \
+-e LOCAL_LISTEN_PORT=8883 \
+--name mqtt_node \
+-p 8883:8883 \
+-p 19999:19999 alpine-nginx:v1.0
+
+
+
+
+docker run -itd \
+-e LISTEN_PORT=19999 \
+-e BACKEND_PORT=80 \
+-e MQTT_DNS=elb-006-MQ-d5c144fcd5223eff.elb.ap-southeast-1.amazonaws.com \
+-e LOCAL_LISTEN_PORT=8883 \
+--name mqtt_node \
+-p 8883:8883 \
+-p 80:19999 alpine-nginx:v1.0

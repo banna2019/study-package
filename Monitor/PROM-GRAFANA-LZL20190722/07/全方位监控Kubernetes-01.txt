@@ -1,0 +1,275 @@
+
+1.K8S监控方案
+	•cAdvisor+Heapster+InfluxDB+Grafana
+	•cAdvisor/exporter+Prometheus+Grafana
+	截图(01)
+	截图(02)
+	
+2.K8S监控指标
+	Kubernetes本身监控
+		•Node资源利用率
+		•Node数量
+		•Pods数量(Node)
+		•资源对象状态
+	Pod监控
+		•Pod数量(项目)
+		•容器资源利用率
+		•应用程序
+
+
+3.实现思路
+	监控指标		具体实现			举例
+	Pod性能			cAdvisor			容器CPU,内存利用率
+	Node性能		node-exporter		节点CPU,内存利用率
+	K8S资源对象		kube-state-metrics	Pod/Deployment/Service
+
+	服务发现：
+		https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config
+
+
+4.在K8S中部署Prometheus
+	https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/prometheus
+	
+	1.pv/pvc配置:
+		cd nfs/
+		sudo mkdir -pv /data/nfs
+		sudo chmod -R 0755 /data
+
+		kubectl apply -f .
+		kubectl get storageclass
+
+		备注: 此处要注意配置nfs的共享目录权限(参考博客: https://www.jianshu.com/p/5e565a8049fc )
+
+	2.K8S中安装配置prometheus
+		git clone https://github.com/kubernetes/kubernetes.git
+
+		cd prometheus
+		kubectl apply -f prometheus-rbac.yaml
+		kubectl apply -f prometheus-configmap.yaml
+
+		vim prometheus-statefulset.yaml
+
+	volumeClaimTemplates:
+- metadata:
+    name: prometheus-data
+  spec:
+    storageClassName: standard
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: "10Gi"
+
+
+
+volumeClaimTemplates:
+  - metadata:
+      name: prometheus-data
+    spec:
+      storageClassName: managed-nfs-storage
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: "10Gi"
+
+
+		kubectl apply -f prometheus-statefulset.yaml
+
+		vim prometheus-service.yaml
+spec:
+  type: NodePort
+  
+		kubectl apply -f prometheus-service.yaml
+		kubectl get pod,svc -n kube-system
+
+		kubectl get pv,pvc --all-namespaces
+		kubectl get pod,svc -n kube-system
+
+
+5.监控K8S集群Node
+	node_exporter：用于*NIX系统监控，使用Go语言编写的收集器
+	
+	使用文档：https://prometheus.io/docs/guides/node-exporter/
+	GitHub：https://github.com/prometheus/node_exporter
+	exporter列表：https://prometheus.io/docs/instrumenting/exporters/
+	
+	kubectl apply -f node-exporter.yaml
+
+
+	vim prometheus-configmap.yaml
+
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - source_labels: [__address__]
+          regex: '(.*):10250'
+          replacement: '${1}:9100'
+          target_label: __address__
+          action: replace
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+
+
+	kubectl apply -f prometheus-configmap.yaml
+	kubectl get pod,svc -n kube-system
+	curl -X POST "http://10.100.164.169:9090/-/reload"	
+		
+	
+
+6.在K8S中部署Grafana与可视化
+	Grafana是一个开源的度量分析和可视化系统
+	https://grafana.com/grafana/download
+	
+			vim grafana.yaml
+				spec:
+				  storageClassName: managed-nfs-storage
+				  
+				spec:
+				  type: NodePort
+				  ports:
+				  - port : 80
+					targetPort: 3000
+					nodePort: 30007
+
+		kubectl apply -f grafana.yaml
+	
+	推荐模板：
+		•集群资源监控：3119
+		•资源状态监控：6417
+		•Node监控：9276
+	
+7.监控K8S集群中Pod
+	kubelet的节点使用cAdvisor提供的metrics接口获取该节点所有容器相关的性能指标数据。
+	
+	暴露接口地址：
+		https://NodeIP:10255/metrics/cadvisor
+		https://NodeIP:10250/metrics/cadvisor
+
+8.监控K8S资源对象
+	kube-state-metrics采集了k8s中各种资源对象的状态信息：
+	kube_daemonset_*
+	kube_deployment_*
+	kube_job_*
+	kube_namespace_*
+	kube_node_*
+	kube_persistentvolumeclaim_*
+	kube_pod_container_*
+	kube_pod_*
+	kube_replicaset_*
+	kube_service_*
+	kube_statefulset_*
+	
+	https://github.com/kubernetes/kube-state-metrics
+	
+		kubectl apply -f kube-state-metrics-rbac.yaml
+		kubectl apply -f kube-state-metrics-deployment.yaml
+		kubectl apply -f kube-state-metrics-service.yaml
+	
+	
+	
+9.在K8S中部署Alertmanager(告警规则与告警通知)
+	截图(03)
+	
+	1.部署Alertmanager
+		kubectl apply -f alertmanager-pvc.yaml 
+		kubectl apply -f alertmanager-configmap.yaml 
+		kubectl apply -f alertmanager-deployment.yaml 
+		kubectl apply -f alertmanager-service.yaml
+		kubectl get pod,svc -n kube-system
+		
+	2.配置Prometheus与Alertmanager通信
+	
+		vim prometheus-configmap.yaml
+		
+		alerting:
+		  alertmanagers:
+		  - static_configs:
+			  - targets: ["alertmanager:80"]
+			  
+		kubectl apply -f prometheus-configmap.yaml
+		curl -X POST "http://10.100.164.169:9090/-/reload"
+		
+	3.配置告警
+		1.prometheus指定rules目录
+			vim prometheus-configmap.yaml
+			
+			data:
+			  prometheus.yml: |
+				rule_files:
+				- /etc/config/rules/*.rules
+			
+			kubectl apply -f prometheus-configmap.yaml
+			curl -X POST "http://10.100.164.169:9090/-/reload"
+		2.configmap存储告警规则
+			prometheus-rules.yaml
+			kubectl apply -f prometheus-rules.yaml
+			
+		3.configmap挂载到容器rules目录
+			vim prometheus-statefulset.yaml
+			
+			volumes:
+			  - name: config-volume
+			    configMap:
+			  	name: prometheus-config
+			  - name: prometheus-rules
+			    configMap:
+			  	name: prometheus-rules
+				
+			volumeMounts:
+              - name: config-volume
+                mountPath: /etc/config
+              - name: prometheus-data
+                mountPath: /data
+                subPath: ""
+              - name: prometheus-rules
+                mountPath: /etc/config/rules
+				
+			kubectl apply -f prometheus-statefulset.yaml
+			kubectl get pod -n kube-sytem
+			
+		4.增加alertmanager告警配置
+			vim alertmanager-configmap.yaml
+			
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: kube-system
+  labels:
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: EnsureExists
+data:
+  alertmanager.yml: |
+    global: 
+      resolve_timeout: 5m
+      smtp_smarthost: 'smtp.163.com:25'
+      smtp_from: 'baojingtongzhi@163.com'
+      smtp_auth_username: 'baojingtongzhi@163.com'
+      smtp_auth_password: 'liang123'
+
+    receivers:
+    - name: default-receiver
+      email_configs:
+      - to: "zhenliang369@163.com"
+
+    route:
+      group_interval: 1m
+      group_wait: 10s
+      receiver: default-receiver
+      repeat_interval: 1m
+	  
+			
+		kubectl apply -f alertmanager-configmap.yaml
+		
+		kubectl exec -it prometheus-0 sh -c prometheus-server -n kube-system
+		kubectl exec alertmanager-5d75d5688f-ts98m -c prometheus-alertmanager cat /etc/config/alertmanager.yml -n kube-system
+
+
+
+10.总结
+	1.标签重要性（环境，部门，项目，管理者）
+	2.Grafana灵活
+	3.PromSQL
+	4.利用服务发现动态加入目标

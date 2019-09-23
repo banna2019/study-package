@@ -1,0 +1,40 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.mail.us-east-1.awsapps.com:465'
+  smtp_from: 'banna@sixthnet.com'
+  smtp_auth_username: 'banna@sixthnet.com'
+  smtp_auth_password: 'lvO3UI2mi-TM'
+  smtp_require_tls: false
+
+route:   
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 20m
+  receiver: 'default-receiver'
+  routes:
+  - receiver: 'default-receiver'  
+    continue: true
+    group_wait: 10s
+    match:
+      team: system
+  - receiver: 'telegram-receiver'  
+    group_wait: 10s
+    match:
+      team: service
+
+receivers:
+- name: 'default-receiver'
+  email_configs:
+  - to: 'banna@sixthnet.com'
+- name: "telegram-receiver"
+  webhook_configs:
+  - url: 'http://china-jiajia:JinG602162545@10.101.1.98:9119/alert'
+    send_resolved: true
+    
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname','dev','instance']

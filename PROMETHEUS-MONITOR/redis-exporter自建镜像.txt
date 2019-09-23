@@ -1,0 +1,49 @@
+
+一、build 镜像
+go get github.com/oliver006/redis_exporter
+docker build -t redis-exporter:v1.0 .
+
+
+redis_exporter参数:
+	-namespace string
+	-redis-only-metrics
+	-redis.addr string
+	-redis.password string
+
+	-skip-tls-verification
+	-tls-client-cert-file string
+	-tls-client-key-file string
+
+	-web.listen-address string
+
+
+redis-test.qdb1rd.ng.0001.apse1.cache.amazonaws.com
+6379
+
+
+二、启动容器
+#指定映射端口启动
+docker run -d \
+--name redis-exporter-banna \
+-p 9221:9121 \
+redis_exporter:v1.0 --redis.addr redis://redis-test.qdb1rd.ng.0001.apse1.cache.amazonaws.com:6379
+
+
+#网络端口映射主机启动
+docker run -d \
+--name redis-exporter-banna \
+--net="host" \
+redis_exporter:v1.0 --redis.addr redis://redis-test.qdb1rd.ng.0001.apse1.cache.amazonaws.com:6379
+
+
+三、grafana模板(不是很完整需要手动调试)
+	763
+	969(AWS ElastiCache Redis)
+		CloudWatch datasource configuration
+		http://docs.grafana.org/datasources/cloudwatch/
+		
+		
+		
+AWS ElastiCache Redis
+	
+	

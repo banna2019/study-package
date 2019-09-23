@@ -1,0 +1,166 @@
+
+配置文件与核心功能:
+	1.全局配置文件
+		https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+	2.scrape_configs
+		截图(1)
+		截图(2)
+	3.relabel_configs
+		relabel_configs: 允许在采集之前对任何目标及其标签进行修改
+			重新标签的意义？
+			•重命名标签名
+			•删除标签
+			•过滤目标
+		
+			relabel_configs:
+			  #源标签
+			  [source_labels: '[' <labelname> [, ...] ']']
+			  #多个源标签时连接的分隔符
+			  [reparator: <string> | default = ; ]
+			  #重新标记的标签
+			  [target_label: <labelname> ]
+			  #正则表达式匹配源标签的值
+			  [regex: <regex> | default = (.*)]
+			  #
+			  [modulus: <uint64> ]
+			  #替换正则表达式匹配的分组,分组引用$1,$2,$3,...
+			  [replacement: <string> | default = $1 ]
+			  #基于正则表达式匹配执行的操作
+			  [action: <relabel_action> | default = replace ] 
+		
+			action: 重新标签动作
+				•replace: 默认,通过regex匹配source_label的值,使用replacement来引用表达式匹配的分组
+				•keep: 删除regex与连接不匹配的目标source_labels
+				•drop: 删除regex与连接匹配的目标source_labels
+				•labeldrop: 删除regex匹配的标签
+				•labelkeep: 删除regex不匹配的标签
+				•hashmod: 设置target_label为modulus连接的哈希值source_labels
+				•labelmap: 匹配regex所有标签名称.然后复制匹配标签的值进行分组,replacement分组引用(${1},${2},…)替代
+		
+		
+			标签-根据标签聚合机房总CPU使用率:
+			根据机房聚合查看CPU使用率？
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+    - targets: ['localhost:9090']
+      labels:
+        idc: bj
+					
+				./promtool  check config prometheus.yml 		#检测配置文件
+				curl -X POST "http://localhost:9090/-/reload"
+				
+				process_cpu_seconds_total{instance="localhost:9090",job="prometheus"}
+				sum(process_cpu_seconds_total{idc="bj"})
+		
+		
+			标签-重命名标签:
+scrape_configs:
+  - job_name: 'bj'
+    static_configs:
+    - targets: ['localhost:9090']
+    relabel_configs:
+    - action: replace
+      source_labels: ['job']
+      regex: (.*)
+      replacement: $1
+      target_label: idc
+	  
+				./promtool  check config prometheus.yml 		#检测配置文件
+				curl -X POST "http://localhost:9090/-/reload"
+				
+				
+			标签-根据标签过滤目标:
+			选择采集目标(被监控端)？
+scrape_configs:
+  - job_name: 'bj'
+    static_configs:
+    - targets: ['localhost:9090']
+    relabel_configs:
+    - action: replace
+      source_labels: ['job']
+      regex: (.*)
+      replacement: $1
+      target_label: idc
+    - action: drop 		###
+      source_labels: ["job"] 				#这里drop会过滤掉导致,目前没有被监控端的信息	  
+	  
+scrape_configs:
+  - job_name: 'bj'
+    static_configs:
+    - targets: ['localhost:9090']
+    relabel_configs:
+    - action: replace
+      source_labels: ['job']
+      regex: (.*)
+      replacement: $1
+      target_label: idc
+    - action: keep		###
+      source_labels: ["job"] 				#这里drop会过滤掉导致,目前没有被监控端的信息
+
+				./promtool  check config prometheus.yml 		#检测配置文件
+				curl -X POST "http://localhost:9090/-/reload"
+
+
+			标签-删除标签:
+scrape_configs:
+  - job_name: 'bj'
+    static_configs:
+    - targets: ['localhost:9090']
+    relabel_configs:
+    - action: replace
+      source_labels: ['job']
+      regex: (.*)
+      replacement: $1
+      target_label: idc
+    - action: keep
+      source_labels: ["job"]
+    - action: labeldrop						#删除标签
+      regex: job
+
+				./promtool  check config prometheus.yml 		#检测配置文件
+				curl -X POST "http://localhost:9090/-/reload"
+				
+		截图(2)
+	4.基于文件的服务发现
+	支持服务发现的来源：
+		•azure_sd_configs
+		•consul_sd_configs
+		•dns_sd_configs
+		•ec2_sd_configs
+		•openstack_sd_configs
+		•file_sd_configs
+		•gce_sd_configs
+		•kubernetes_sd_configs
+		•marathon_sd_configs
+		•nerve_sd_configs
+		•serverset_sd_configs
+		•triton_sd_configs
+		
+	基于文件的服务发现:
+scrape_configs:
+  - job_name: 'prometheus'
+    file_sd_configs:
+     - files: ['/opt/prometheus/config/*.yml']
+       refresh_interval: 5s 		#5秒检测一次配置文件
+	 
+	./promtool  check config prometheus.yml 		#检测配置文件
+	curl -X POST "http://localhost:9090/-/reload"
+	
+	
+	mkdir config
+	vim config/test.yml	
+
+- targets: ["localhost:9090"]
+
+
+- targets: ["localhost:9090"]
+  labels:
+    idc: bj
+	
+	
+	chown -R prometheus.root /opt/prometheus
+	./promtool  check config prometheus.yml 		#检测配置文件
+	curl -X POST "http://localhost:9090/-/reload"
+	
+		

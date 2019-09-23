@@ -1,0 +1,24 @@
+
+wget https://github.com/prometheus/alertmanager/releases/download/v0.18.0/alertmanager-0.18.0.linux-amd64.tar.gz
+
+一、自建镜像
+go get github.com/prometheus/alertmanager
+cd /root/go/src/github.com/prometheus/alertmanager/
+
+mkdir -pv .build/linux-amd64
+cd .build/linux-amd64
+wget https://github.com/prometheus/alertmanager/releases/download/v0.18.0/alertmanager-0.18.0.linux-amd64.tar.gz
+tar xf alertmanager-0.18.0.linux-amd64.tar.gz 
+cp alertmanager-0.18.0.linux-amd64/amtool .build/linux-amd64/
+cp alertmanager-0.18.0.linux-amd64/alertmanager .build/linux-amd64/
+
+docker build -t alertmanger:v1.0 .
+
+二、启动镜像
+mkdir -pv /data/alertmanager/{config,data,template,webhook}
+cp examples/ha/alertmanager.yml /data/alertmanager/config/
+chmod -R 0777 /data
+
+
+docker run --name alertmanger-banna1 -p 9093:9093 -d -v /data/alertmanager/data:/alertmanager -v /data/alertmanager/config/alertmanager.yml:/etc/alertmanager/alertmanager.yml alertmanger:v1.0
+docker run --name alertmanger-banna1 -p 9093:9093 -d -v /data/alertmanager/data:/alertmanager -v /data/alertmanager/template:/etc/alertmanager/template -v /data/alertmanager/config/alertmanager.yml:/etc/alertmanager/alertmanager.yml alertmanger:v1.0

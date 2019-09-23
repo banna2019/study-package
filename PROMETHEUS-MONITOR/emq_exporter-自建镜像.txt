@@ -1,0 +1,74 @@
+
+一、自建镜像
+go get github.com/nuvo/emq_exporter
+cd /root/go/src/github.com/nuvo/emq_exporter
+
+wget https://github.com/nuvo/emq_exporter/releases/download/v0.4.1/emq_exporter-0.4.1-linux.tar.gz
+tar xf emq_exporter-0.4.1-linux.tar.gz 
+mv emq_exporter-0.4.1-linux/emq_exporter .
+
+docker build -t emq_exporter:v1.0 .
+
+
+docker run -d --name emqx-banna -p 18083:18083 -p 1883:1883 -p 8081:8080 emqx/emqx:v3.2.1
+docker run -d --name emqx-banna --net="host" emqx/emqx:v3.2.1
+docker run -d --name emqx-banna --net="host" -e EMQX_NODE__NAME='it5-prometheus-monitor@10.101.1.25' emqx/emqx:v3.2.1
+
+http://54.169.74.39:18083/
+admin
+public
+
+
+EMQX-API-METRICS：
+	curl -v --basic -u 754389cf20963:Mjg4NTkzNTUzNDQyNTIyMzU0ODUxOTI5NTMyNDQyMjE0NDA -k http://localhost:8080/api/v3/metrics/
+
+	curl -v --basic -u 754389cf20963:Mjg4NTkzNTUzNDQyNTIyMzU0ODUxOTI5NTMyNDQyMjE0NDA -k http://localhost:8080/api/v3/nodes/db-monitor@127.0.0.1/metrics/
+	
+	
+	#metrics web界面访问
+	http://54.169.208.54:8080/api/v3/metrics
+	http://54.169.208.54:8080/api/v3/nodes/db-monitor@127.0.0.1/metrics/
+
+二、添加emq-exporter的配置
+mkdir -pv /data/emq_exporter/
+chmod -R 777 /data
+
+备注: 创建了appid和secret才能继续创建auth.json认证文件;获取步骤根据如下截图
+	emqx-api-metrics01.jpg
+	emqx-api-metrics02.jpg
+	emqx-api-metrics03.jpg
+
+vim /data/emq_exporter/auth.json
+
+{
+  "username": "4e06d755ddd1c",
+  "password": "Mjg4NzAzMzQwNjczNDQ3MjczMTkyNTA5OTczMjMxMDQyNTG"
+}
+
+
+三、启动emq-exporter的监控节点
+docker run -d \
+-p 9540:9540 \
+--name emq-exporter-banna \
+-v /data/emq_exporter/auth.json:/etc/emq/auth.json \
+emq_exporter:v1.0 \
+--emq.uri "http://10.101.1.5:8080" \
+--emq.node "db-monitor@127.0.0.1" \
+--emq.api-version "v3" \
+--emq.creds-file "/etc/emq/auth.json"
+
+
+
+#启动参数参考
+./emq_exporter --emq.uri="http://127.0.0.1:8080" --emq.username="admin" --emq.password="Admin111" --emq.node="emqx@127.0.0.1" --emq.api-version="v3"
+
+curl http://localhost:9540/metrics
+http://54.169.74.39:9540/metrics
+
+
+
+四、Grafana-template:
+	9963(EMQ 服务指标看板)
+		https://github.com/nuvo/emq_exporter
+	10084(EMQ Dashboard)
+	

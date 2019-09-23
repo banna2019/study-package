@@ -1,0 +1,17 @@
+[Unit]
+Description=Prometheus Alertmanager
+After=network-online.target
+
+[Service]
+Type=simple
+User=prometheus
+Group=prometheus
+ExecStart=/etc/alertmanager/alertmanager --config.file=/etc/alertmanager/alertmanager.yml
+
+ExecStop=/usr/bin/killall alertmanager
+Restart=on-failure
+MemoryLimit=300M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target

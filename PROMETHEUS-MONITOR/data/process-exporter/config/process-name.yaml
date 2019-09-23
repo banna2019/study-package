@@ -1,0 +1,7 @@
+process_names:
+  - name: "{{.Matches}}"
+    cmdline:
+    - 'zombie'
+  - name: "{{.Matches}}"
+    cmdline:
+    - 'docker'

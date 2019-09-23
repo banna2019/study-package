@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-config
+  namespace: kube-ops
+data:
+  config.yml: |-
+    global:
+      resolve_timeout: 5m
+      smtp_smarthost: 'smtp.163.com:25'
+      smtp_from: 'jiajia664878380@163.com'
+      smtp_auth_username: 'jiajia664878380@163.com'
+      smtp_auth_password: 'JinG602162545'
+      smtp_hello: '163.com'
+      smtp_require_tls: false
+    route:
+      group_by: ['alertname','cluster']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 5m
+      receiver: default
+      routes:
+      - receiver: webhook
+        match: 
+          filesystem: node
+      - receiver: email
+        group_wait: 10s
+        match:
+          team: node
+    receivers:
+    - name: 'default'
+      email_configs:
+      - to: 'jxyjxy1990@gmail.com'
+        send_resolved: true
+    - name: 'email'
+      email_configs:
+      - to: 'jxyjxy1990@gmail.com'
+        send_resolved: true
+    - name: 'webhook'
+      webhook_configs:
+      - url: 'http://dingtalk-hook:5000'
+        send_resolved: true

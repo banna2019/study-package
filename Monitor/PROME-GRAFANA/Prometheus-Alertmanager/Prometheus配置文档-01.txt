@@ -1,0 +1,120 @@
+
+
+警告和警告管理:
+	警告的介绍:	
+		
+		普罗米修斯是一个划分的平台,度量的收集和存储于警报是分开的.警报由称为Alertmanager工具提供,这是监视环境的独立部分.
+		警报规则在Prometheus服务器撒花姑娘定义.这些规则可以出发事件,然后将其传播到Alertmanager.Alertmanageer随后决定如何
+		处理各自的警报,处理复制之类的问题,并决定在发送警报时使用什么机制: 实时消息、电子邮件或其他工具.
+		
+	常见的反人类模式设计(缺陷导致关键报警被忽视在;不重要的报警洪流中):
+	
+		一、发送太多报警
+		二、警告的错误分类
+		三、发送无用的警告
+		
+		
+	良好的警示有一些关键特征:
+		嘈杂的提醒会导致警觉疲劳,最终,警告会被忽略.
+		应该设置正确的警报优先级.如果警报是紧急的,那么应该将其快速路由到负责响应的一方.如果警报不是紧急的,我们应该以适当的速度
+		发送它,以便在需要时做出响应.
+		警报应该包含适当的上下文,使它们立即有用
+
+
+
+配置Alertmanager告警:
+	安装Alertmanager:
+		下载地址:
+			地址1: https://prometheus.io/download/#altermanager
+			地址2: https://github.com/prometheus/altermanager/releases
+			
+			
+		wget https://github.com/prometheus/alertmanager/releases/download/v0.16.2/alertmanager-0.16.2.linux-amd64.tar.gz
+		
+tar xf alertmanager-0.16.2.linux-amd64.tar.gz 
+mv alertmanager-0.16.2.linux-amd64 /etc/alertmanager
+cp /etc/alertmanager/alertmanager /usr/bin/
+cp /etc/alertmanager/amtool /usr/bin/
+		chown -R prometheus.prometheus /etc/alertmanager
+
+
+		cat /etc/alertmanager/alertmanager.yml
+		amtool check-config /etc/alertmanager/alertmanager.yml
+
+		
+cat >> /usr/lib/systemd/system/node_exporter.service << EOF
+[Unit]
+Description=Prometheus Alertmanager
+After=network-online.target
+
+[Service]
+Type=simple
+User=prometheus
+Group=prometheus
+ExecStart=/etc/alertmanager/alertmanager --config.file=/etc/alertmanager/alertmanager.yml
+
+ExecStop=/usr/bin/killall alertmanager
+Restart=on-failure
+MemoryLimit=300M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+		chmod 777  /etc/systemd/system/alertmanager.service
+
+
+			mkdir -pv /etc/alertmanager/template
+			vim  /etc/alertmanager/template/test.tmpl
+
+
+
+
+
+			邮件设置参考:
+				https://prometheus.io/docs/alerting/configuration/#email_config
+			webhook接收器:
+				https://prometheus.io/docs/alerting/configuration/#webhook_config
+			
+
+
+
+
+			
+			group_by: 				根据labael(标签)进行匹配,如果是过个,就要多个匹配
+			group_wait: 30s         等待该组的报警,看有没有一起合伙搭车
+			group_interval: 5m      下一次报警开车时间
+			repeat_interval: 3h		 重复报警时间
+			
+			备注:
+				新报警时间: 上一次报警之后的group_interval时间
+				重复的报警,下次报警时间为: group_interval+repeat_interval
+				
+
+
+	通过Alertmanager控制静默
+	
+	
+	
+	通过命令行创建静默:
+		// amtool --alermanager.url=http://192.168.2.57:9093 silence add
+		alertname=IntancesGone service=application1 -c "test1"
+		// amtool --alermanager.url=http://192.168.2.57:9093 silence add severity=critical -c "test2"
+
+			备注: 创建的静默时间为1h,也可以手工指定,匹配两个标签,然后会返回一个静默ID
+		
+		// amtool --alermanager.url=http://192.168.2.57:9093 silence query  //查询当前静默列表
+		// amtool --alermanager.url=http://localhost:9093 silence expire 784ac68d-33ce-4e9b-8b95-431a1e0fc268  //该静默失效
+	
+			备注: amtool 如果不指定 --alermanager,默认会在 $HOME/.config/amtool/config.yml 或 /etc/amtools/config.yml 查询
+	
+		// config.yml
+		alermanager.url: "http://192.168.2.57:9093"
+		author: test@example.com
+		comment_required: true
+		
+		// amtool silence add --comment "App1 maintenance" alertname=~'Instance.*' service=application1
+		// amtool silence add --author "test" --duration "2h" alertname=InstancesGone service=application1
+		

@@ -1,0 +1,46 @@
+
+优化处理器子系统
+	在所有计算机中,无论手持设备还是科学计算集群,最重要的都是用来做计算的处理器.在摩尔定律的影响下,
+	处理器子系统比其它所有子系统的发展都要快很多.结果是系统瓶颈很少出现在CPU上,除非系统是专门做运算的.
+	通过一个Inte处理器系统的平均CPU使用率低于10%就很容易得出这个结论.理解处理器瓶颈和如何优化CPU性能参数是很重要的.
+
+
+进程优先级
+	前面已经说过,不可能修改某个进程的优先级.唯一的办法是间接的通过调整进程nice级别,但这也并非总是可行.
+	如果某个进程运行太慢,就可以调低它的nice级别,给它更多的CPU时间.当然,这就意味着其它进程拥有更低的处理器时间,将会变得更慢.
+
+	Linux支持的nice级别从19(最低级别)到-20(最高级别).默认值是0.需要使用root权限,才能把进程的nice级别设置为负数(更高的优先级).
+		以nice级别-5启动xyz程序,使用如下命令：
+			nice -n -5 xyz
+
+		修改运行中的程序优先级,使用如下命令：
+			renice level pid
+
+		把PID为2500的进程优先级设置为10：
+			renice 10 2500
+
+
+
+CPU中断处理
+	在中断处理中,如下两个原则是十分有效的：
+		1.把产生大量中断的进程绑定到一个CPU上.
+			CPU亲和力使得管理员可以把中断绑定到某个或者某组物理处理器上(当然,这对单CPU系统无效).要更改某个IRQ的亲和力,
+			进入到/proc/irq/%{irq号码}/目录,修改smp_affinity文件的CPU mask值.把19号IRQ的亲和力设置到第三个CPU的命令如下(不适用SMT):
+				echo 03 > /proc/irq/19/smp_affinity
+
+		2.让物理处理器处理中断
+			在对称多线程(SMT,symmetric multi-threadind)系统中,例如IBM POWER 5+处理器支持多线程,它就推荐将中断处理绑定到物理处理器上,
+			而不是SMT实例.在双路多线程系统中,物理处理器通常都是较低的CPU数,CPU编号0和2通常是物理CUP,而1和3通常是指多线程实例.
+			如果不使用smp_affnity标志,就没必要担心这个了！
+
+
+考虑NUMA系统
+	非统一内存架构(NUMA,Non-Uniform Memory Architecture)系统正在获取市场份额,被看做是传统统一多处理系统的自然演化.
+	尽管当前Linux发行版的CPU调度也同样适用于NUMA系统,但是应用程序可能就不一定了.由non-NUMA导致的性能降低是很难识别的.
+	可以使用numactl包中的numastat工具找到在NUMA架构上有问题进程.
+		cat /proc/irq/19/smp_affinity
+
+	numastat统计数据保存在/sys/devices/system/node/%{node number}%/numastat文件中,可以用来帮助找到瓶颈.
+	numa_miss和other_node字段偏高可能是MUMA引起的.如果发现给进程分配的内存不是在进程的本地节点上(运行程序的处理器节点),
+	尝试对这个进程renice或者采用NUMA
+		cat /sys/devices/system/node/node0/numastat

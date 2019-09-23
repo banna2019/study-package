@@ -1,0 +1,43 @@
+
+一、克隆代码
+	go get github.com/ncabatoff/process-exporter
+	cd /root/go/src/github.com/ncabatoff/process-exporter/
+
+	wget https://github.com/ncabatoff/process-exporter/releases/download/v0.5.0/process-exporter-0.5.0.linux-amd64.tar.gz
+
+	tar xf process-exporter-0.5.0.linux-amd64.tar.gz
+	cp process-exporter-0.5.0.linux-amd64/process-exporter .
+
+二、build新镜像
+	docker build -t process-exporter:v1.0 .
+
+三、配置process-exporter参数文件
+	mkdir -pv /data/process-exporter/config
+	vim process-name.yaml
+	
+process_names:
+  - name: "{{.Matches}}"
+    cmdline:
+    - 'nginx'
+  - name: "{{.Matches}}"
+    cmdline:
+    - 'zombie'
+  - name: "{{.Matches}}"
+    cmdline:
+    - 'docker'
+
+	
+	chmod -R 777 /data
+	
+
+四、启动容器
+	docker run -d --rm -p 9256:9256 --privileged -v /proc:/host/proc -v /data/process-exporter/config:/config process-exporter:v1.0 --procfs /host/proc -config.path /config/process-name.yaml
+
+
+
+五、process-exporter获取service 进程信息
+docker-service:
+	namedprocess_namegroup_num_procs{groupname="map[:docker]",job="process-service"}
+	
+nginx-service:
+	namedprocess_namegroup_num_procs{groupname="map[:nginx]",job="process-service"}

@@ -1,0 +1,117 @@
+groups:
+- name: nodes.rules
+  rules:
+  - alert: 内存使用率过高
+    expr: 100-(node_memory_Buffers_bytes+node_memory_Cached_bytes+node_memory_MemFree_bytes)/node_memory_MemTotal_bytes*100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Instance {{ $labels.instance }} 内存使用率过高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}内存使用率超过80%,当前使用率[{{ $value }}]."
+      value: "{{ $value }}"
+  - alert: 内存使用率超高
+    expr: 100-(node_memory_Buffers_bytes+node_memory_Cached_bytes+node_memory_MemFree_bytes)/node_memory_MemTotal_bytes*100 > 90 
+    for: 5m 
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} 内存使用率超高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}内存使用率超过90%请及时排障,当前使用率[{{ $value }}]."
+      value: "{{ $value }}"
+  - alert: cpu使用率过高
+    expr: 100-avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by(instance)*100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Instance {{ $labels.instance }} cpu使用率过高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}cpu使用率超过80%,当前使用率[{{ $value }}]."
+      value: "{{ $value }}"
+  - alert: cpu使用率超高
+    expr: 100-avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by(instance)*100 > 90
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} cpu使用率超高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}cpu使用率超过90%请及时排障,当前使用率[{{ $value }}]."  
+      value: "{{ $value }}"
+  - alert: 磁盘空间略高
+    expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100 > 70
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{$labels.instance}} 磁盘空间略高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}磁盘空间略高超过70%,当前使用率[{{ $value }}]."
+      value: "{{ $value }}"
+  - alert: 磁盘空间超高
+    expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100 > 90
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{$labels.instance}} 磁盘空间略高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}磁盘空间略高超过90%请及时排障,当前使用率[{{ $value }}]."
+      value: "{{ $value }}"
+  - alert: 服务器宕机了
+    expr: up{job="nodes-exporter"} == 0
+    for: 5m
+    labels:
+      severity: critical
+      team: node
+    annotations:
+      summary: "{{$labels.instance}} 服务器宕机了"
+      description: "{{ $labels.instance }} of job {{$labels.job}}服务停止运行,当前状态[{{$value}}]."
+      value: "{{ $value }}"
+  - alert: docker监控节点挂了
+    expr: up{job="docker-service"} == 0
+    for: 5m
+    labels:
+      severity: critical
+      team: node
+    annotations:
+      summary: "{{$labels.instance}} docker监控节点挂了"
+      description: "{{ $labels.instance }} of job {{$labels.job}}服务停止运行,当前状态[{{$value}}]."
+      value: "{{ $value }}"
+  - alert: 宿主机磁盘IO过高
+    expr: irate(node_disk_writes_completed_total{job=~"nodes-exporter"}[1m]) > 10
+    for: 5m
+    labels:
+      name: Diskio
+      severity: Warning
+    annotations:
+      summary: "Instance {{ $labels.instance }} 宿主机磁盘IO过高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}宿主机磁盘1分钟平均写入IO负载较高,当前值[{{ $value }}]iops."
+      value: "{{ $value }}"
+  - alert: 网卡5分钟平均接收流量过高
+    expr: irate(node_network_receive_bytes_total{device!~"lo|bond[0-9]|cbr[0-9]|veth.*|virbr.*|ovs-system"}[5m]) / 1048576  > 10
+    for: 5m
+    labels:
+      name: Network_receive
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} 网卡5分钟平均接收流量过高"
+      description: "{{ $labels.instance }} of job {{$labels.job}}宿主机网卡5分钟平均接收流量超过10Mbps,当前值[{{ $value }}]Mbps."
+      value: "{{ $value }}"
+  - alert: TCP_ESTABLISHED会话
+    expr: node_netstat_Tcp_CurrEstab > 5000
+    for: 5m
+    labels:
+      name: Tcp_Established
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} TCP_ESTABLISHED过高！"
+      description: "{{ $labels.instance }} of job {{$labels.job}} TCP_ESTABLISHED大于5000,当前值[{{ $value }}]."
+      value: "{{ $value }}"
+  - alert: TCP_TIME_WAIT会话
+    expr: node_sockstat_TCP_tw > 500
+    for: 5m
+    labels:
+      name: Tcp_Time_Wait
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} TCP_TIME_WAIT过高！"
+      description: "{{ $labels.instance }} of job {{$labels.job}} TCP_TIME_WAIT大于500,当前值[{{ $value }}]."
+      value: "{{ $value }}"

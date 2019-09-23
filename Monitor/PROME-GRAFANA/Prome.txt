@@ -1,0 +1,25 @@
+
+
+curl  -XPOST localhost:9090/-/reload
+
+节点本身的监控主要监控CPU、内存、磁盘IO、文件系统可用空间即可。
+比如，对于使用来prometheus的alertmanager来做node报警，rules配置可以参考如下点进行配置即可。
+说明
+不同的node-exporter版本,对应的metrics也不一样,需要自己对照更改一下。
+
+CPU监控:
+(1 - avg(irate(node_cpu{mode="idle"}[5m])) by (instance)) * 100 < 90
+
+内存监控:
+((node_memory_MemTotal - node_memory_MemFree) / node_memory_MemTotal) * 100 < 90
+
+磁盘IO监控:
+(max(avg(irate(node_disk_io_time_ms[10m])) by (instance,device)) by (instance)) / 10
+
+文件系统可用空间监控:
+max(((node_filesystem_size{fstype=~"ext4|vfat"} - node_filesystem_free{fstype=~"ext4|vfat"}) / node_filesystem_size{fstype=~"ext4|vfat"}) * 100) by (instance) > 90
+
+
+
+We are looking for cat food
+

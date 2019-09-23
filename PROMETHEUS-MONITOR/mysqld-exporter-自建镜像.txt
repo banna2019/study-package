@@ -1,0 +1,75 @@
+
+mysql -h banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com -uroot -p27jq7bhfO81B6qqNZfx6jK0R
+
+banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com
+3306
+root
+27jq7bhfO81B6qqNZfx6jK0R
+
+一、数据库创建监控用户并授权
+CREATE USER 'exporter'@'%' IDENTIFIED BY 'exporter123';
+GRANT PROCESS,REPLICATION CLIENT,SELECT ON *.* TO 'exporter'@'%' WITH MAX_USER_CONNECTIONS 3;
+flush privileges;
+
+CREATE USER 'exporter'@'%' IDENTIFIED BY 'exporter123';
+GRANT PROCESS,REPLICATION CLIENT ON *.* TO 'exporter'@'%';
+GRANT SELECT ON performance_schema.* TO 'exporter'@'%';
+flush privileges;
+
+
+二、自建mysql_exporter镜像
+go get github.com/prometheus/mysqld_exporter
+mkdir -pv .build/linux-amd64
+wget https://github.com/prometheus/mysqld_exporter/releases/download/v0.12.0/mysqld_exporter-0.12.0.linux-amd64.tar.gz
+tar xf mysqld_exporter-0.12.0.linux-amd64.tar.gz
+cp mysqld_exporter-0.12.0.linux-amd64/mysqld_exporter  .build/linux-amd64/
+
+docker build -t mysqld-exporter:v1.0 .
+
+
+三、启动mysqld_exporter容器
+docker run -d \
+-p 9104:9104 \
+-e DATA_SOURCE_NAME="exporter:exporter123@(banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com:3306)/" \
+mysqld-exporter:v1.0
+  
+  
+docker run -d \
+--net="host" \
+-e DATA_SOURCE_NAME="exporter:exporter123@(banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com:3306)/" \
+mysqld-exporter:v1.0
+
+
+
+--web.listen-address
+
+docker run -d --name mysqld-exporter-banna \
+-p 9114:9104 \
+-e DATA_SOURCE_NAME="exporter:exporter123@(banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com:3306)/" \
+mysqld-exporter:v1.0 --collect.global_status \
+--collect.info_schema.innodb_metrics \
+--collect.auto_increment.columns \
+--collect.info_schema.processlist \
+--collect.binlog_size \
+--collect.info_schema.tablestats \
+--collect.global_variables \
+--collect.info_schema.query_response_time \
+--collect.info_schema.userstats \
+--collect.info_schema.tables \
+--collect.perf_schema.tablelocks \
+--collect.perf_schema.file_events \
+--collect.perf_schema.eventswaits \
+--collect.perf_schema.indexiowaits \
+--collect.perf_schema.tableiowaits \
+--collect.slave_status
+
+
+
+四、Grafana template:
+	6239(Mysql - Prometheus)
+	9892(MySQL InnoDB Mutex-percona)
+	702(Amazon RDS OS Metrics)-CloudWatch
+		Visualize OS metrics for Amazon RDS instance
+		Last updated: 3 years ago
+		
+	

@@ -1,0 +1,150 @@
+
+好的压测工具可能的功能如下：
+	发起压力
+	监控性能
+	监控系统使用率
+	生成报告
+	
+	
+	
+	基准测试无非就是看系统能力是否达到对系统预期的能力.如果一款系统拥有较高的Linpack分数,但它未必是理想的文件服务器.
+	基准测试不可能模拟出终端用户的行为,因为他们是不可预测的.基准测试不会告诉你,在用户访问他们文件的时候或者备份开始的时候,服务器会做什么反应.
+	一般来说,基准测试应该遵循如下几个原则：
+		为服务器负载做基准测试：服务器系统和典型的PC完全不同.为了利用系统的SMP能力和模拟一个真实的多用户环境,服务器测试使用多线程.
+								PC打开一个网页浏览器的速度可能比高端服务器更快,但是服务器打开1000个网页浏览器的速度会比PC快很多.
+		模拟预期的负载：所有的基准测试都有不同的配置选项,应该朝着未来预期运行的负载方向定制测试.如果应用需要低延迟的磁盘,那么强大的CPU性能也没什么大的用处.
+		隔离测试系统：如果要对系统进行基准测试,首先要把它尽可能的从其它负载中隔离.在系统上运行一个top命令也会极大的影响基准测试结果.
+		结果平均：即使试着隔离测试系统,可能还会有未知的因素在压测时影响系统性能.经验表明,至少执行三次测试,然后将结果平均,以保证偶然因素不会影响全面分析.
+		
+		
+		
+	基于以上标准选择的工具：
+		在Linux上测试： Linux是基准测试的目标
+		能运行在所有的硬件平台上测试： 由于IBM提供3种不同的硬件平台(把IBM System p和IBM System i看做都是基于IBM POER架构),所以选择不用做太多修改就能在所有架构上使用的工具很重要.
+		开源： Linux运行在很多平台上,如果需要到处运行,就可能需要源代码.
+		文档全面： 必须了解用来做性能测试的工具,所以需要文档.在使用某工具之前,先了解它的理念、设计和细节,以确定它是否真的合适.
+		维护中的： 如果使用已经停止维护的软件,可能无法跟上最新的技术和标准,导致错误的结果.
+		广泛使用的： 很方便找到相关信息.
+		使用简单的： 简单更好用.
+		能产生报告： 具有报告功能能极大的减轻性能分析工作.
+		
+		
+		
+		
+lmbench
+	LMbench是一套微测试工具,用来分析不同操作系统设置,比如SELinux是否启用.LMbench可以用来测试操作系统的各个方面,如上下文切换、本地通信、内存带宽、文件操作等.
+	LMbench使用起来很简单,仅有三个重要命令：+ make results：第一次启动LMbench时,它会提示一些操作系统的信息,还有要执行哪些测试. + make return：在完成初始化配置和第一次运行LMbench之后,
+	使用make return命令,重复make results时的配置进行测试. + make see：在至少三次运行之后,可以使用make see命令查看结果.可以使用图表的方式展示和分析.
+	LMbench项目地址是：[http://sourceforge.net/projects/lmbench/](http://sourceforge.net/projects/lmbench/)
+	
+	
+	
+	
+iozone
+	IOzone是一个文件系统测试工具,可以用它模拟各种磁盘访问方式.由于IOzone的配置很详细,所以可以用来精确的模拟目标文件系统的负载.
+	IOzone可以使用不同的块大小写入各种大小的文件.
+	IOzone有一种非常好用的自动测试模式,方便测试者自定义各种测试行为,如文件大小、I/O大小和访问方式等等.
+	如果文件系统是为数据库服务做准备的,应该重点测试大block size的大文件随机访问,而不是小block size的大文件.
+	IOzone重要的选项如下:
+		-b 让IOzone以微软Excel兼容格式保存成电子表格.
+		-C 显示每个子进程的输出(用来检查是否每个子进程都在运行模拟程序)
+		-f 告诉IOzone写入文件的地方
+		-i 使用这个选项指定要运行什么测试.使用-i 0 指定第一时间写入到测试文件.使用-i 1是流式读,-i 8是混合随机访问负载.
+		-h 显示帮助
+		-r 指定测试类型和I/O大小.测试文件大小应该尽量和目标系统以后的工作负载相似,以便测试出真实的负载能力.
+		-k 使用内核2.6的异步I/O特性.经常用在数据库服务器的测试,例如IBM的DB2.
+		-m 如果目标应用使用多个内部缓冲,那么可以使用-m选项模拟这个行为.
+		-s 指定测试文件的大小.对于异步文件系统(大多数文件系统的默认挂载选项),IOzone应该使用至少两倍内存大小的测试文件才能真正衡量出磁盘性能.
+		   测试文件大小可以MB或者GB为单位,直接在大小后面跟上m或者g的单位即可.
+		-+u 实验性的选项.可以衡量在测试期间处理器的使用率.
+		
+		
+	注意：保存在异步文件系统,并且小于系统内存大小的测试文件,只能测试内存吞吐量,而不是磁盘子系统的性能.
+		  所以,目标文件系统应该使用sync选项挂载,并且测试文件是系统内存的至少两倍
+		 
+		 
+	实例:
+		使用IOzone来衡量挂载在/perf目录上的磁盘子系统的随机读性能,测试文件大小为10GB,32KB的block size
+			./iozone -b results.xls -R -i 0 -i 2 -f /perf/iozone.file -r 32 -s 10g
+			
+		导入表格图片(a-graphic-produced-out-of-the-sample-results-of-example-above.png)
+			
+			
+	如果IOzone的文件大小和系统内存或者缓存一致,可以用来获取缓存和内存的吞吐量.应该注意的是,由于文件系统开销,IOzone只会获得70-80%的系统能力.
+	IOzone的地址：http://www.iozone.org/
+			
+	
+	
+	
+	
+netperf
+	nerperf是专注于TCP/IP网络性能的测试工具.它支持UNIX的socket和SCTP测试.
+	netperf基于C/S(client-server)模型设计.netserver运行在目标服务器上,netperf运行在客户机上.netperf控制netserver,netperf把配置数据发送到netserver,
+	产生网络流量,从一个独立于测试连接的控制连接获取netserver的结果.在测试过程中,在控制连接中没有数据交流,所以不会对结果产生影响.
+	netperf压测工具也有提供报表的功能,包括CPU使用率.
+	netperf能生成多种类型的流量.基本分为两种：大块传输数据的流量和请求/响应的流量.netperf一次只使用一个socket.在下一版本的netperf(netperf4)中,将会全面支持并发会话.
+
+	
+	大块数据传输(Bulk data transfer)
+	大块数据传输能力是网络测试中最常用的指标,通过一秒钟传送的数据量来衡量.它可以模拟大文件传输,例如多媒体流和FTP的数据传输.
+
+	请求/响应(Request/response type)
+		模拟请求/响应的流量,衡量指标是一秒钟完成的请求响应次数.请求/响应是最常见的在线应用流量,例如web、数据库、邮件服务、文件服务(中小文件),目录服务.
+		在真实的环境中,会话的建立终止和数据交换的方式是一样的.为了模拟它,需要使用到TCP_CRR类型.
+
+	并发会话(Concurrent session)
+		在当前的稳定版中,netperf还不真正支持并发会话测试,但是,可以以如下的方式开启多个netperf实例:
+			for i in ‘seq 1 10‘; do  netperf -t TCP_CRR -H target.example.com -i 10 -P 0; done
+			
+			
+	全局选项: 
+		-A 设置本地接收和发送缓冲的调整
+		-b 爆发大量流测试包
+		-H 远程机器
+		-t 测试流量类型
+			TCP_STREAM  大量数据传输测试
+			TCP_MAERTS和TCP_STREAM很像,只是流的方向相反
+			TCP_SENDFILE和TCP_STREAM很像,只是使用sendfile(),而不是send().会引发zero-copy操作
+			UDP_STREAM和TCP_STREAM很像,只不过是UDP
+			TCP_RR 请求响应报文测试
+			TCP_CC  TCP的连接/关闭测试.不产生请求和响应报文.
+			TCP_CRR 执行连接/请求/响应/关闭的操作.和禁用HTTP keepalive的HTTP1.0/1.1相似.
+			UDP_RR  和TCP_RR一样,只不过是UDP
+		-l 测试长度.如果是一个正值,netperf会执行testlen秒.如果值为负,netperf一直执行,直到大量数据传输测试中交换testlen字节,或者在请求/响应次数达到testlen.
+		-c 本地CPU使用率报告
+		-C 远程服务器CPU使用率报告
+			在某些平台上,CPU使用率的报告可能不准确.在性能测试之前,请确保准确性
+		-I 这个选项是用来维护结果可信度的.可信级别应该设置为99%或者95%.为了保证结果可信度级别,netperf会把多次重复测试.例如-I 99 5,代表在100次的99次中,测试结果和真实情况有5%(+-2.5%)的浮动区间.
+		-i 这个选项限制了最大和最小的重复次数.-i 10 3表示,netperf重复同样的测试,最多10次,最少3次.如果重复次数超过最大值,结果就不在-I指定的可信任级别中,将在结果中显示一个警告.
+		-s ,-S修改发送和接收的本地和远程缓冲大小.这个会影响到窗口大小.
+	
+		TCP_STREAM,TCP_MAERTS,TCP_SENDFILE,UDP_STREAM的选项
+			-m,-M 指定传给send()和recv()函数的缓冲大小.分别控制每个调用的发送和接收大小.
+		TCP_RR,TCP_CC,TCP_CRR,UDP_RR的选项：
+			-r,-R分别指定请求和响应的大小.例如-r 128,8129意思是netperf发送128字节包到netserver,然后它响应一个8129字节的包给netperf.
+	
+	
+	command:
+		/usr/local/bin/netperf -l 60 -H plnxsu4 -t TCP_CRR -c 100 -C 100 -i,3 -I 95,5 -v
+		
+	
+	
+	
+其它工具:
+	工具				主要功能
+	bonnie				磁盘IO和文件系统测试 http://www.textuality.com/bonnie/
+	bonnie++			磁盘IO和文件系统测试 http://www.coker.com.au/bonnie++/
+	NetBench			文件服务器测试,运行在Windows上
+	dbench				文件系统测试,通常用来文件服务器压测 http://freshmeat.net/projects/dbench/
+	iometer				磁盘I/O和网络压测 http://www.iometer.org/
+	ttcp				简单的网络测试
+	iperf				网络测试 http://dast.nlanr.net/projects/Iperf/
+	ab(Apache Bench)	简单的web服务器测试,包含在Apache服务器中http://httpd.apache.org/
+	WebStone			Web服务器测试 http://www.mindcraft.com/webstone/
+	Apache Jmeter		主要用来web服务器性能测试.也支持其它协议,例如SMTP,LDAP,JDBC等,有很好的报告功能http://jakarta.apache.org/jmeter/
+	fsstone,smtpstone	邮件服务器测试,包含在postfix中 http://www.postfix.org/
+	nhfsstone			网络文件系统测试,包含在nfs-utils包中
+	DirectoryMark		LDAP测试 http://www.mindcraft.com/directorymark/
+
+
+	

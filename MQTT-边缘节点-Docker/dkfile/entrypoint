@@ -1,0 +1,11 @@
+#!/bin/bash
+cat /opt/nginx.conf.template | \
+   sed "s#@MQTT_DNS@#${MQTT_DNS}#g" | \
+   sed "s#@LISTEN_PORT@#${LISTEN_PORT}#g" | \
+   sed "s#@BACKEND_PORT@#${BACKEND_PORT}#g" | \
+   sed "s#@LOCAL_LISTEN_PORT@#${LOCAL_LISTEN_PORT}#g" | \
+   cat > /etc/nginx/nginx.conf
+   
+/usr/sbin/nginx -g 'daemon off;'
+
+

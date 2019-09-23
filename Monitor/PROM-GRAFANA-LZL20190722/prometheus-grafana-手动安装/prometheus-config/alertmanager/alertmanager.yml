@@ -1,0 +1,24 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.163.com:25'
+  smtp_from: 'jiajia664878380@163.com'
+  smtp_auth_username: 'jiajia664878380@163.com'
+  smtp_auth_password: 'JinG602162545'
+  smtp_require_tls: false
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1m
+  receiver: 'mail'
+receivers:
+- name: 'mail'
+  email_configs:
+  - to: 'jiajia664878380@163.com'
+#inhibit_rules:
+#  - source_match:
+#      severity: 'critical'
+#    target_match:
+#      severity: 'warning'
+#    equal: ['alertname', 'dev', 'instance']

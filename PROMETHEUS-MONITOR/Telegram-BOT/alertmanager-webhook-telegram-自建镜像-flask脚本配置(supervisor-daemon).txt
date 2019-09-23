@@ -1,0 +1,74 @@
+
+一、克隆alertmanager-webhook-telegram项目
+	git clone https://github.com/nopp/alertmanager-webhook-telegram.git
+
+	cd /root/alertmanager-webhook-telegram
+
+二、安装配置supervisor
+	1.安装supervisor
+		pip install --upgrade pip
+		pip install supervisor
+
+	2.配置supervisor
+		mkdir /usr/local/supervisor
+		mkdir /var/log/supervisor
+		mkdir /etc/supervisor.d
+
+		echo_supervisord_conf > /etc/supervisord.conf
+
+		cp /etc/supervisord.conf{,.bak}
+		vim /etc/supervisord.conf
+
+[inet_http_server]
+port=0.0.0.0:88   
+username=admin    
+password=admin123 
+
+[include]
+files = /etc/supervisor.d/*.ini
+
+	3.配置alermanager-webhook-telegram(flaskAlert.py)脚本守护任务
+		vim /etc/supervisor.d/alermanager-webhook-telegram.ini
+[program:webhook]
+directory = /data/alertmanager/webhook
+command = /bin/python /data/alertmanager/webhook/flaskAlert.py
+autostart = true     
+startsecs = 5       
+autorestart = true 
+startretries = 3   
+user = root  
+redirect_stderr = true 
+stdout_logfile_maxbytes = 20MB 
+stdout_logfile_backups = 20 
+stdout_logfile = /var/log/supervisor/webhook.log
+
+
+
+		mkdir -pv  /data/alertmanager/webhook
+		cp /root/alertmanager-webhook-telegram/flaskAlert.py /data/alertmanager/webhook/
+		chmod -R 777 /data
+
+四、配置supervisor CentOS7脚本
+	vim /usr/lib/systemd/system/supervisor.service
+
+[Unit]
+Description=supervisor
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/supervisord -c /etc/supervisord.conf
+ExecStop=/usr/bin/supervisorctl $OPTIONS shutdown
+ExecReload=/usr/bin/supervisorctl $OPTIONS reload
+KillMode=process
+Restart=always
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target
+
+	
+	chmod 0644 /usr/lib/systemd/system/supervisor.service
+	systemctl daemon-reload 
+	systemctl start supervisor.service
+	systemctl status supervisor.service

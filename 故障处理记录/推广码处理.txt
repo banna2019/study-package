@@ -1,0 +1,23 @@
+
+
+#推广号码重复(上redis删除)
+redis-cli del user.extend.seq 
+
+API服务器(重新生成邀请码-前提得先在redis中删除):
+curl -X POST  "http://localhost:8038/user/genextend?min=1000000"
+
+查找重复邀请码信息:
+select max(user_id) from 
+(
+	SELECT user_id,extend FROM cuser_rebate WHERE extend IN
+	(
+	SELECT extend FROM  
+	( SELECT COUNT(extend) c ,extend FROM cuser_rebate GROUP BY extend  HAVING c >1)  t
+	)
+)    a group by extend  order by extend desc .
+
+
+#更新相同推广码
+update cuser_rebate set extend = concat(extend,'4')  where user_id in(539456,518139,498885,527675,513968);
+
+红海 ID:589869  ID:478856 推广码一样都是：5771870   然后ID:478856的推广码需要换一下

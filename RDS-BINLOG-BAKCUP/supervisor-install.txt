@@ -1,0 +1,112 @@
+
+一、安装supervisor
+	yum install gcc gcc-c++ epel-release -y 
+	yum install python-pip -y 
+
+	pip install supervisor
+
+	supervisord -v
+
+	mkdir /usr/local/supervisor
+	mkdir /var/log/supervisor
+	mkdir /etc/supervisor.d
+
+
+二、调整supervisor配置
+	echo_supervisord_conf > /etc/supervisord.conf
+
+	cp /etc/supervisord.conf{,.bak}
+	vim /etc/supervisord.conf
+
+
+[inet_http_server] 
+port=0.0.0.0:80   
+username=admin  
+password=admin123  
+
+[include]
+files = /etc/supervisor.d/*.ini
+
+
+	
+	#后台daemon执行配置文件
+	vim /etc/supervisor.d/binlogbak.ini
+
+[program:binlog]
+directory = /data/scripts
+command = /bin/bash /data/scripts/baklogs.sh 
+autostart = true     
+startsecs = 5       
+autorestart = true 
+startretries = 3   
+user = root  
+redirect_stderr = true 
+stdout_logfile_maxbytes = 20MB 
+stdout_logfile_backups = 20 
+stdout_logfile = /var/log/supervisor/bakbinlog.log
+
+
+
+三、CentOS7启动脚本
+	
+	vim /usr/lib/systemd/system/supervisor.service
+
+[Unit]
+Description=supervisor
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/supervisord -c /etc/supervisord.conf
+ExecStop=/usr/bin/supervisorctl $OPTIONS shutdown
+ExecReload=/usr/bin/supervisorctl $OPTIONS reload
+KillMode=process
+Restart=always
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target
+
+
+	chmod 0644 /usr/lib/systemd/system/supervisor.service
+
+	systemctl start supervisor.service
+	systemctl stop supervisor.service
+	systemctl restart supervisor.service
+	systemctl reload supervisor.service
+	systemctl status supervisor.service
+	systemctl enable supervisor.service
+	
+	
+四、命令详解:
+	初始启动Supervisord,启动、管理配置中设置的进程:
+		supervisord
+
+	停止(启动,重启)某一个进程(xxx)/全部:
+		supervisorctl stop(start, restart) xxx/all
+
+	只载入最新的配置文件, 并不重启任何进程:
+		supervisorctl reread
+
+	载入最新的配置文件,停止原来的所有进程并按新的配置启动管理所有进程:
+		supervisorctl reload
+
+	根据最新的配置文件,启动新配置或有改动的进程,配置没有改动的进程不会受影响而重启:
+		supervisorctl update
+
+	查看正在守候的进程
+		supervisorctl
+
+	启动某个进程(program_name=你被监控程序的配置中[program：xxx]里写的程序名称)
+		supervisorctl start program_name
+
+	停止某一进程 (program_name=你被监控程序的配置中[program：xxx]里写的程序名称)
+		pervisorctl stop program_name
+
+	重启某一进程 (program_name=你被监控程序的配置中[program：xxx]里写的程序名称)
+		supervisorctl restart program_name
+
+	停止全部进程
+		supervisorctl stop all
+
+	注意：显示用stop停止掉的进程,用reload或者update都不会自动重启.

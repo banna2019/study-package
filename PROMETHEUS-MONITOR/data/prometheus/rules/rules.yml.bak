@@ -1,0 +1,76 @@
+groups:
+- name: nodes.rules
+  rules:
+  - alert: NodeMemoryUsage
+    expr: (node_memory_MemTotal_bytes - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes)) / node_memory_MemTotal_bytes * 100 > 80
+    for: 2m
+    labels:
+      team: node
+    annotations:
+      summary: "{{$labels.instance}}: High Memory usage detected"
+      description: "{{$labels.instance}}: Memory usage is above 80% (current value is: {{ $value }}"
+  - alert: NodeFilesystemUsage
+    expr: (node_filesystem_size_bytes{device="rootfs"} - node_filesystem_free_bytes{device="rootfs"}) / node_filesystem_size_bytes{device="rootfs"} * 100 > 80
+    for: 2m
+    labels:
+      filesystem: node
+    annotations:
+      summary: "{{$labels.instance}}: High Filesystem usage detected"
+      description: "{{$labels.instance}}: 文件系统使用率高于 70% (current value is: {{ $value }}"
+      #description: "{{$labels.instance}}: Filesystem usage is above 70% (current value is: {{ $value }}"
+  - alert: NodeDiskUsage
+    expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100 > 80
+    for: 2m
+    labels:
+      filesystem: node
+    annotations:
+      summary: "{{$labels.instance}}: High Filesystem usage detected"
+      description: "{{$labels.instance}}: Filesystem usage is above 80% (current value is: {{ $value }}"
+  - alert: nodes_cpu_avg_rate5m
+    expr: 100 - avg (irate(node_cpu_seconds_total{job="node",mode="idle"}[5m])) by (instance) * 100 > 90
+    for: 2m
+    labels:
+      team: node
+    annotations:
+      summary: "{{$labels.instance}}: High CPU usage detected"
+      description: "{{$labels.instance}}: CPU usage is above 90% (current value is: {{$value}})"
+  - alert: nodes_cpu_avg_rate10m
+    expr: 100 - avg (irate(node_cpu_seconds_total{job="node",mode="idle"}[10m])) by (instance) * 100 > 90
+    for: 2m
+    labels:
+      team: node
+    annotations:
+      summary: "{{$labels.instance}}: High CPU usage detected"
+      description: "{{$labels.instance}}: CPU usage is above 90% (current value is: {{$value}})"
+  - alert: nodes_cpu_avg_rate15m
+    expr: 100 - avg (irate(node_cpu_seconds_total{job="node",mode="idle"}[15m])) by (instance) * 100 > 90
+    for: 2m
+    labels:
+      team: node
+    annotations:
+      summary: "{{$labels.instance}}: High CPU usage detected"
+      description: "{{$labels.instance}}: CPU usage is above 90% (current value is: {{$value}})"
+  - alert: InstanceDown
+    expr: sum(up{job="nodes-exporter"}) == 0
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+  - alert: docker_status
+    expr: sum(namedprocess_namegroup_num_procs{groupname="map[:docker]",job="process-service"}) < 2
+    for: 2m
+    labels:
+      team: node
+    annotations:
+      summary: "{{$labels.instance}}: Docker service is shutdown"
+      description: "{{$labels.instance}}: Docker service is shutdown (current value is: {{$value}})"
+  - alert: nginx_status
+    expr: namedprocess_namegroup_num_procs{groupname="map[:nginx]",job="process-service"}  < 2
+    for: 2m
+    labels:
+      team: node
+    annotations:
+      summary: "{{$labels.instance}}: Nginx service is shutdown"
+      description: "{{$labels.instance}}: Nginx service is shutdown (current value is: {{$value}})"

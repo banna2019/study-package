@@ -1,0 +1,59 @@
+
+一、参考文档
+1.JMX_EXPORTER
+	https://github.com/prometheus/jmx_exporter
+
+2.JMX_EXPORTER_DOCKER_TEMPLATE(SERVICE)
+	https://hub.docker.com/r/etraveli/jmx_exporter/dockerfile
+	https://www.cnblogs.com/aguncn/p/10106453.html
+	
+3.JMX_EXPORTER_MONITOR_SERVICE_CONFIG_TEMPLATE
+	https://github.com/prometheus/jmx_exporter/tree/master/example_configs
+
+4.JMX_EXPORTER_JAR_PACKAGE_DOWNLOAD
+	https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.12.0/
+	
+
+二、被监控jvm端参数配置
+	1.启动配置样式
+		java -javaagent:./jmx_prometheus_javaagent-0.12.0.jar=3010:/data/jmx_exporter/config.yaml -jar jmx_prometheus_javaagent-0.12.0.jar
+
+	2.tomcat jvm监控配置添加(catalina.sh)
+		JAVA_OPTS="$JAVA_OPTS -Duser.timezone=GMT+08 -javaagent:/data/jmx_exporter/jmx_prometheus_javaagent-0.12.0.jar=9092:/data/jmx_exporter/config.yaml -Djava.protocol.handler.pkgs=org.apache.catalina.webresources"
+
+		JAVA_OPTS="$JAVA_OPTS -Duser.timezone=GMT+08 -javaagent:/data/jmx_exporter/jmx_prometheus_javaagent-0.12.0.jar=9292:/data/jmx_exporter/jmx_exporter.yml -Djava.protocol.handler.pkgs=org.apache.catalina.webresources"
+
+	3.测试获取metrics
+		curl curl http://localhost:9092/metrics
+		
+		
+三、prometheus配置jvm监控
+
+	vim prometheus.yml
+
+scrape_configs:
+  - job_name: 'tomcat-service'
+    file_sd_configs:
+     - files: ['/etc/prometheus/discovery/tomcat.yml']
+       refresh_interval: 5s
+  - job_name: 'java-monitor'
+    file_sd_configs:
+     - files: ['/etc/prometheus/discovery/java.yml']
+       refresh_interval: 5s
+	   
+	   
+	   
+	vim tomcat.yml
+
+- targets: ['10.101.1.98:9092']
+
+
+	vim java.yml
+
+- targets: ['10.101.1.98:9292']
+
+
+
+
+四、Grafana监控模板
+	8704(Tomcat dashboard)

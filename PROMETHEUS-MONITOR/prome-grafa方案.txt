@@ -1,0 +1,53 @@
+
+一、项目日期: 20190922
+
+二、监控二期(prometheus):	1.部署方式(部署方式,需要调研落地;"适合当前环境,并有利于后期扩展"):
+		二进制部署
+		容器化部署(docker化部署prometheus)
+		K8S
+		
+	2.监控类型(优先级需要再做调整):
+		agent:
+			OS:
+				CPU
+				Memory
+				Disk
+				Disk IO
+				TCP
+				Network
+				System-service
+				
+		service:
+			DB				RDS
+			Redis  			ElastiCache		
+			MQ				emq x
+			nginx
+			jvm				4701(JVM (Micrometer))/4033(OpenNMS Java 8 CPU Dashboard)/8563(JVM dashboard)/3457
+			ES
+		api、状态:
+			url
+			接口
+			进程
+			
+		Cloudwacth
+		
+		Pushgetway(nodes量大的情况下)
+				
+	3、zabbix告警策略一职并优化到prometheus    ***
+	
+	4.告警
+		告警颗粒度:
+			报警的颗粒度限定(待探讨)
+		告警方式:
+			邮件(alertmanger)
+			app(telegram、钉钉、微信)
+	5.prometheus集群(集群方案)
+		部署方式(K8S)
+
+
+三、监控三期(prometheus+grafana):
+	1)监控巡检制度,及辅助巡检功能开发
+	2)监控系统grafana图表化定制化开发(promSQL)
+	3)监控系统监控结果触发相关API后续操作
+	4)监控系统与运维中台集成
+	5)监控大屏功能开发

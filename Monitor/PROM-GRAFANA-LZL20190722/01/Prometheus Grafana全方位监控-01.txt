@@ -1,0 +1,60 @@
+
+1.监控
+	为什么要监控？
+	怎么来监控？
+	要监控什么?
+	Prometheus监控范畴
+	
+2.Prometheus概述
+	Prometheus是什么
+	Prometheus组成与架构
+	监控指标数据模型
+	监控指标数据类型
+	作业和实例
+	
+3.Prometheus部署
+	二进制部署
+	Docker部署
+	
+4.配置文件与核心功能
+	全局配置文件介绍
+	配置采集目标(scrage_configs)
+	重新标签:
+		根据标签聚合机房总CPU使用率
+		重命名标签
+		根据标签过滤目标
+		删除标签
+	基于文件的服务发现(file_sd_configs)
+	
+5.监控案例
+	监控Linux服务器
+	PromSQL获取CPU,内存,硬盘使用率
+	PromSQL获取系统服务运行状态
+	Grafana与Prometheus集成
+	Grafana可视化展示Linux资源使用率
+	监控Docker服务器与Grafana可视化
+	监控MySQL服务器与Grafana可视化
+	
+6.警告利器Alertmanager
+	部署Alertmanager
+	Alertmanager与Prometheus集成
+	监控目标运行状态并邮件通知
+	告警状态
+	告警分配
+	告警收敛(分组、控制、静默)
+	Prometheus一条告警是怎么触发的？
+	编写告警规则案例
+	
+7.全方位监控Kubernetes资源与应用
+	监控方案
+	监控指标
+	实现思路
+	在K8S中部署Prometheus
+	监控K8S集群Node
+	在K8S中部署Grafana与可视化
+	监控K8S集群中POD
+	监控K8S资源对象
+	在K8S中部署Alertmanager
+	告警规则与告警通知
+
+	

@@ -1,0 +1,89 @@
+
+一、克隆alertmanager-webhook-telegram和build alertmanager-webhook-telegram自建镜像
+	go get github.com/nopp/alertmanager-webhook-telegram
+
+	cd /root/go/src/github.com/nopp/alertmanager-webhook-telegram/
+
+	cp -rp docker/* .
+	
+	docker build -t alertmanager-webhook-telegram:v1.0 .
+
+
+
+二、启动telegram-bot容器
+	1.启动telegram-bot容器:
+		docker run -d --name telegram-bot --net="host" --pid="host" -e "bottoken=927656742:AAGS5yTPl46Dg08BBoYYgDHWXOgKO3cg7jk" -e "chatid=-318201448" -e "username=china-jiajia" -e "password=JinG602162545" alertmanager-webhook-telegram:v1.0
+		
+		
+		docker run -d --name telegram-bot -e "bottoken=927656742:AAGS5yTPl46Dg08BBoYYgDHWXOgKO3cg7jk" -e "chatid=-318201448" -e "username=china-jiajia" -e "password=JinG602162545" -p 9119:9119 alertmanager-webhook-telegram:v1.0
+
+	2.相关参数信息参考
+		BOT API Token:
+			927656742:AAGS5yTPl46Dg08BBoYYgDHWXOgKO3cg7jk
+
+		ChatID:
+			API方法getUPdates获取群ID:
+			curl https://api.telegram.org/bot927656742:AAGS5yTPl46Dg08BBoYYgDHWXOgKO3cg7jk/getUpdates
+			
+			备注: 获取到的CHAT ID
+				("chat":{"id":-318201448")
+
+		username:
+			china-jiajia
+		password:
+			JinG602162545
+	
+		
+	3.
+		pip install -r requirements.txt
+		python flaskAlert.py
+		
+		curl -X POST --data '{"status":"resolved","groupLabels":{"alertname":"instance_down"},"commonAnnotations":{"description":"i-0d7188fkl90bac100 of job ec2-sp-node_exporter has been down for more than 2 minutes.","summary":"Instance i-0d7188fkl90bac100 down"},"alerts":[{"status":"resolved","labels":{"name":"olokinho01-prod","instance":"i-0d7188fkl90bac100","job":"ec2-sp-node_exporter","alertname":"instance_down","os":"linux","severity":"page"},"endsAt":"2019-07-01T16:16:19.376244942-03:00","generatorURL":"http://pmts.io:9090","startsAt":"2019-07-01T16:02:19.376245319-03:00","annotations":{"description":"i-0d7188fkl90bac100 of job ec2-sp-node_exporter has been down for more than 2 minutes.","summary":"Instance i-0d7188fkl90bac100 down"}}],"version":"4","receiver":"infra-alert","externalURL":"http://alm.io:9093","commonLabels":{"name":"olokinho01-prod","instance":"i-0d7188fkl90bac100","job":"ec2-sp-node_exporter","alertname":"instance_down","os":"linux","severity":"page"}}' http://china-jiajia:JinG602162545@ip_address:9119/alert
+		
+		curl -X POST --data '{"status":"resolved","groupLabels":{"alertname":"instance_down"},"commonAnnotations":{"description":"i-0d7188fkl90bac100 of job ec2-sp-node_exporter has been down for more than 2 minutes.","summary":"Instance i-0d7188fkl90bac100 down"},"alerts":[{"status":"resolved","labels":{"name":"olokinho01-prod","instance":"i-0d7188fkl90bac100","job":"ec2-sp-node_exporter","alertname":"instance_down","os":"linux","severity":"page"},"endsAt":"2019-07-01T16:16:19.376244942-03:00","generatorURL":"http://pmts.io:9090","startsAt":"2019-07-01T16:02:19.376245319-03:00","annotations":{"description":"i-0d7188fkl90bac100 of job ec2-sp-node_exporter has been down for more than 2 minutes.","summary":"Instance i-0d7188fkl90bac100 down"}}],"version":"4","receiver":"infra-alert","externalURL":"http://alm.io:9093","commonLabels":{"name":"olokinho01-prod","instance":"i-0d7188fkl90bac100","job":"ec2-sp-node_exporter","alertname":"instance_down","os":"linux","severity":"page"}}' http://china-jiajia:JinG602162545@10.101.1.98:9119/alert
+
+	
+三、alertmanager配置添加alertmanager-webhook-telegram
+
+vim cat alertmanager.yml
+
+global:
+  smtp_smarthost: 'smtp.mail.us-east-1.awsapps.com:465'
+  smtp_from: 'banna@sixthnet.com'
+  smtp_auth_username: 'banna@sixthnet.com'
+  smtp_auth_password: 'lvO3UI2mi-TM'
+  smtp_require_tls: false
+  resolve_timeout: 5m
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 5m
+  receiver: default
+  routes:
+  - receiver: telegram-webhook
+    group_wait: 10s
+    match: 
+      filesystem: node
+  - receiver: email
+    group_wait: 10s
+    match:
+      team: node
+receivers:
+- name: 'default'
+  email_configs:
+  - to: 'banna@sixthnet.com'
+    send_resolved: true
+- name: 'email'
+  email_configs:
+  - to: 'banna@sixthnet.com'
+    send_resolved: true
+- name: "telegram-webhook"
+  webhook_configs:
+  - url: http://china-jiajia:JinG602162545@10.101.1.98:9119/alert
+    send_resolved: true
+
+
+
+	
+

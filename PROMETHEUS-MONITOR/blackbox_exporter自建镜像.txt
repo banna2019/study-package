@@ -1,0 +1,32 @@
+
+一、自建build blackbox_exporter镜像
+	go get github.com/prometheus/blackbox_exporter
+	cd /root/go/src/github.com/prometheus/blackbox_exporter
+
+	mkdir -pv .build/linux-amd64
+	wget https://github.com/prometheus/blackbox_exporter/releases/download/v0.14.0/blackbox_exporter-0.14.0.linux-amd64.tar.gz
+	tar xf blackbox_exporter-0.14.0.linux-amd64.tar.gz
+
+	cp blackbox_exporter-0.14.0.linux-amd64/blackbox_exporter .build/linux-amd64/
+
+	docker build -t blackbox_exporter:v1.0 
+
+
+二、修改配置并启动blackbox_exporter
+	mkdir -pv /data/blackbox_exporter/config
+	chmod -R 0777 /data
+
+	/data/blackbox_exporter/config/balckbox.yml
+
+	docker run -d -p 9115:9115 --name blackbox_exporter -v /data/blackbox_exporter/config/blackbox.yml:/config/blackbox.yml blackbox_exporter:v1.0 --config.file=/config/blackbox.yml
+
+
+三、grafanfa模板
+	grafana-template:
+		9965
+		5345
+		7587
+		
+	docker exec 7b1eaad919ad /usr/share/grafana/bin/grafana-cli --pluginsDir /var/lib/grafana/plugins/ plugins install grafana-piechart-panel
+	docker exec 7b1eaad919ad /usr/share/grafana/bin/grafana-cli --pluginsDir /var/lib/grafana/plugins/ plugins install grafana-piechart-panel
+

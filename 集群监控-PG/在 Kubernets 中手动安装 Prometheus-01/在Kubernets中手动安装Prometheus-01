@@ -1,0 +1,76 @@
+
+一、简介
+	Prometheus 最初是 SoundCloud 构建的开源系统监控和报警工具，是一个独立的开源项目，于2016年加入了 CNCF 基金会，作为继 Kubernetes 之后的第二个托管项目。
+
+二、特征
+	Prometheus 相比于其他传统监控工具主要有以下几个特点：
+
+	具有由 metric 名称和键/值对标识的时间序列数据的多维数据模型
+	有一个灵活的查询语言
+	不依赖分布式存储，只和本地磁盘有关
+	通过 HTTP 的服务拉取时间序列数据
+	也支持推送的方式来添加时间序列数据
+	还支持通过服务发现或静态配置发现目标
+	多种图形和仪表板支持
+
+三、组件
+	Prometheus 由多个组件组成，但是其中许多组件是可选的：
+	Prometheus Server：用于抓取指标、存储时间序列数据
+	exporter：暴露指标让任务来抓
+	pushgateway：push 的方式将指标数据推送到该网关
+	alertmanager：处理报警的报警组件
+	adhoc：用于数据查询
+
+	大多数Prometheus组件都是用Go编写的,因此很容易构建和部署为静态的二进制文件
+
+四、架构
+	下图是Prometheus官方提供的架构及其一些相关的生态系统组件:
+	图片
+
+	整体流程比较简单,Prometheus直接接收或者通过中间的Pushgateway 网关被动获取指标数据,在本地存储所有的获取的指标数据,并对这些数据进行一些规则整理,用来生成一些聚合数据或者报警信息,Grafana 或者其他工具用来可视化这些数据.
+
+
+五、prometheus配置文件详解
+ 	prometheus.yml文件的基本配置如下：
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first.rules"
+  # - "second.rules"
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+上面这个配置文件中包含了3个模块：global、rule_files和scrape_configs
+其中global模块控制Prometheus Server的全局配置：
+	scrape_interval：表示prometheus抓取指标数据的频率,默认是15s,我们可以覆盖这个值
+	evaluation_interval：用来控制评估规则的频率,prometheus使用规则产生新的时间序列数据或者产生警报
+	rule_files: 模块制定了规则所在的位置,prometheus可以根据这个配置加载规则,用于生成新的时间序列数据或者报警信息,当前我们没有配置任何规则
+	scrape_configs: 用于控制prometheus监控哪些资源;由于prometheus通过HTTP的方式来暴露的它本身的监控数据,prometheus也能够监控本身的健康情况.在默认的配置里有一个单独的job,叫做prometheus,它采集prometheus服务本身的时间序列数据.这个job包含了一个单独的、静态配置的目标：监听localhost上的9090端口.prometheus默认会通过目标的/metrics路径采集metrics.所以,默认的job通过 URL：http://localhost:9090/metrics采集metrics.收集到的时间序列包含prometheus服务本身的状态和性能.如果我们还有其他的资源需要监控的话,直接配置在该模块下面就可以了.
+
+六、安装
+	kubectl create namespace kube-ops
+	node-exporter.yaml			#node节点部署文件
+	prometheus-cm.yaml			#MapConig文件
+	prometheus-deploy.yaml		#prometheus deploy部署文件
+	prometheus-pv.yaml			#prometheus部署pv及pvc文件
+	prometheus-rbac.yaml		#kubernetes cluster 用户权限授权
+	prometheus-svc.yaml			#prometheus service文件
+
+	kubectl apply -f .
+	kubectl get pod,svc -n kube-ops
+	kubectl describe pod prometheus-6f77bbb898-h85jk -n kube-ops
+
+	curl -X POST http://10.103.185.83:9090/-/reload
+
+	curl -k --cert ca.crt --key ca.key  https://172.31.17.194:6443/metrics
+	kubectl get serviceaccount --all-namespaces
+	kubectl describe serviceaccount prometheus  -n kube-ops
+	kubectl create clusterrolebinding login-dashboard-admin --clusterrole=cluster-admin --user=prometheus
+
+参考博客: https://www.qikqiak.com/k8s-book/docs/52.Prometheus%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.html

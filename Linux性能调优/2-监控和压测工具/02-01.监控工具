@@ -1,0 +1,183 @@
+
+sar
+	使用sar命令可以收集、展示和保存系统信息.sar命令由三个部分组成：sar,显示数据,sa1和sa2,收集和存储数据.sar工具是sysstat包的一部分.
+	因为有sa1和sa2,可以配置来收集和记录系统信息,用来以后分析.
+
+	小贴士：建议尽可能的系统上运行sar,以防遇到性能问题的时候,手头可以有很详细的信息.而且,sar只消耗很少的系统资源.
+	
+	
+	command:
+		sar -A 				#数据输入出会保存到"/var/log/sa/"下
+		sar -n DEV -f sa21	#显示21号的网络计数器
+		sar -u 3 10
+		sar -n DEV
+		sar -n DEV 1 2
+		
+		
+	备注(参数参考博客):
+		https://blog.csdn.net/volitationlong/article/details/81741754	
+		
+		
+mpstat
+	mpstat是一个可以展示多处理器服务器上每个可用CPU活动信息的命令.所有CPU的平均活动情况也会显示出来.mpstat也是sysstat包的一部分.
+	mpstat工具可以全面展示系统或者CPU的统计信息.通过给mpstat传递采样频率和采样次数,可以模拟vmstat的使用
+	
+	
+	command:
+		mpstat -P ALL
+		mpstat -P ALL 1 2
+		mpstat -?
+		
+		
+		
+numastat
+	在企业数据中心,非统一内存架构(Non-Uniform Memory Architecture,NUMA)已经变成主流,例如IBM System x3950,
+	然而,NUMA系统给调优带来了新的挑战.在NUMA出现之前,我们从来不需要关心内存的位置.
+	幸好,企业Linux发行版为监测NUMA架构行为提供了工具.numastat命令提供本地和远程内存使用率和所有节点的整体内存配置.
+	本地内存分配失败的信息在numa_miss一行展示,远程内存（shower memory）分配信息在numa_foregin一行展示.
+	过度的使用远程内存会增加风险,可能导致整体性能下降.把进程绑定映射本地内存的节点会增加性能.
+
+	command:
+		yum install numactl -y
+		
+		
+	备注(参考博客):
+		https://www.cnblogs.com/machangwei-8/p/10402644.html
+		
+		
+pmap
+	pmap命令会展示一个或多个进程正在使用的内存量.使用这一工具,可以确定服务器上的哪一个进程正在分配内存,
+	还有是否这部分内存导致了内存瓶颈.更多信息.使用pmap -d选项.
+
+	
+	command:
+		pmap -d <pid>
+		pmap -d 1
+		
+			最后一行显示的信息最为有用：
+				mapped 该进程映射到文件的内存量
+				writable/private 该进程使用的私有地址空间
+				shared 该进程和其它进程共享的地址空间量
+		pmap -?	
+
+		
+		
+netstat
+	netstat是最常用的工具之一,它会展示网络相关的信息,例如socket使用,路由,接口,协议和其它网络统计.有如下的基础选项：
+		-a 显示所有的socket信息
+		-r 显示路由信息
+		-i 显示网络接口统计
+		-s 显示网络协议统计
+		
+	command:
+		netstat -natuw			#查看socket信息
+		
+		
+	Socket信息解释：
+		Proto socket使用的协议(tcp,udp,raw)
+		Recv-Q 表示收到的数据已经在本地接收缓冲,但是还有多少没有被进程取走,单位是字节.
+		Send-Q 对方没有收到的数据或者说没有Ack的,还是本地缓冲区,单位字节.
+		Local Address socket的本地地址和端口.除非使用--numeric(-n)选项,socket地址会被解释成主机名(FQDN),端口号会被转成相应的服务名字.
+		Foreign Address 远端socket的端口和地址.
+		State socket的状态.因为raw和UDP通常是没有状态的,所以这列可能是空白
+		
+		
+iptraf
+	iptraf监控和展示TCP/IP的实时流量.它可以根据各个session、接口、协议展示TCP/IP流量统计.iptraf组件是由iptraf包提供
+
+	iptraf给我们展示如下的报告:
+		IP流量监控：通过TCP连接的网络流量统计
+		接口一般统计：网络接口流量统计
+		接口详细统计：根据端口的网络流量统计
+		统计分析：根据TCP/UDP端口和包大小的网络流量统计
+		局域网统计：根据网络2层地址的网络流量统计
+		
+
+
+tcmpdump/ethereal
+	tcpdump和ethereal通常用来抓取和分析网络流量.这两个工具都会用到libpcap库来抓取包.在混杂模式下,
+	它们会监控网卡上的所有流量,并且抓取所有网卡上收到的分片.为了抓取所有包,这些命令应该使用超级用户权限执行,以便开启网卡混杂模式.
+	可以使用这些工具来找到和网络相关的问题.可以发现TCP/IP重传,滑动窗口大小变化,名字解析问题、网络错误配置等.
+	记住,这些工具只能监控所有到达网卡的分片,而不是所有的网络流量.
+
+	tcpdump
+		tcpdump是一个简单和强大的工具.它拥有基本的协议分析能力,可以获得网络上的大体情况.
+		tcpdump可以使用很多选项和扩展表达式来过滤要抓取的包.
+		
+		入门的几个选项:
+			-i 指定网络接口
+			-e 打印数据链路层头
+			-s 抓取每个包的字节
+			-n 避免DNS解析
+			-w 写入文件
+			-r 从文件读取
+			-v,-vv,-vvv 详细输出
+	
+	
+		抓取过滤器的表达式：
+			关键字：
+				源目主机,源目端口,tcp,udp,icmp,源目网络等等
+				联合逻辑使用
+				非('!'或者'not')
+				与('&&'或者'and')
+				或('||'或者'or')
+				
+				
+			过滤表达式样例:
+				DNS查询包
+				  tcpdump -i eth0 'udp port 53'
+				
+				目的主机为10.11.10.168的FTP传输和FTP数据会话
+				  tcpdump -i eth0 'dst 10.11.10.168 and (port ftp or ftp-data)'
+				
+				目标为10.11.10.168的HTTP会话
+				  tcmpdump -ni eth0 'dst 10.11.10.168 and tcp and port 80'
+				
+				到10.11.10.168/24子网的telnet会话(译者: 例子中貌似是ssh会话)
+				  tcmpdump -ni eth0 'dst net 10.11.10.168/24 and tcp and port 22'
+				
+				抓取源目地址都不在10.11.10.168/24子网,并且带有TCP SYN或者TCP FIN标志(建立或者中断TCP连接)的数据.
+				  tcpdump 'tcp[tcpflags] & (tcp-syn|tcp-fin)!=0 and not src and dst net 10.11.10.168/24'
+			  
+			  
+	ethereal
+		ethereal有和tcpdump相似的功能,但是更加复杂,并且拥有更高级的协议分析和报告能力.它还拥有一个GUI接口和ethereal命令行界面.
+		和tcpdump类似,ethereal也可以使用过滤抓取,从而缩小抓取分片的范围.如下是一些常用的表达式.
+
+			IP
+				ip.version ==6 and ip.len > 1450
+				ip.addr == 129.111.0.0/16
+				ip.dst eq www.example.com and ip.src == 192.168.1.1
+				not ip.addr eq 192.168.4.1
+
+			TCP/UDP
+				tcp.port eq 22
+				tcp.port == 80 and ip.src == 192.168.2.1
+				tcp.dstport == 80 and (tcp.flags.syn == 1 or tcp.flags.fin == 1)
+				tcp.srcport == 80 and (tcp.flags.syn == 1 and tcp.flags.ack == 1)
+				tcp.dstport == 80 and tcp.flags == 0x21
+
+			应用层
+				http.request.method == "POST "
+				smb.path contains \\SERVER\SHARE
+
+
+
+nmon
+	Nigel's Monitor简称nmon,是由Nigel Griffiths开发的监控Linux系统性能的常用工具.由于nmon能监控多个子系统的性能信息,
+	所以,可以把它作为性能监控的唯一工具.通过nmon可以获取的信息有: 处理器利用率、内存利用率、运行队列信息、磁盘I/O统计和网络I/O统计,页活动信息和进程指标.
+	运行nmon,只需要通过输入感兴趣的子系统的首字母,获取相关信息.例如,获得CPU,内存、磁盘统计,首先运行nmon,然后输入cmd.
+	nmon的一个很有用的特性是能够使用逗号分割的CVS文件保存性能统计,以便以后观察.nmon输出的CSV文件可以导入电子表格应用中,
+	生成可视化图形报告,要使用该功能,启动nmon的时候需要带上-f选项.例如使用如下命令,让nmon生成30秒钟为频率,总时长1小时的报告.
+		
+	备注:
+		官网: http://nmon.sourceforge.net/pmwiki.php?n=Site.Download
+		
+	command:
+		nmon -f -s 30 -c 120
+			此命令将把统计生成的文本文件存储在当前目录下,名字格式为_date_time.nmon
+			
+		wget http://sourceforge.net/projects/nmon/files/nmon16h.tar.gz
+		tar xf nmon16h.tar.gz
+		mv nmon16h_x86_rhel7  /usr/bin/nmon
+		

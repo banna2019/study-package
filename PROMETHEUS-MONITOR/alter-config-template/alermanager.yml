@@ -1,0 +1,22 @@
+route:
+  group_by: ['alertname']
+  group_wait: 5s
+  group_interval: 1m
+  repeat_interval: 3h 
+  receiver: mengyuan
+
+receivers:
+- name: 'mengyuan'
+  webhook_configs:
+  - url: http://192.168.0.53:8080
+  email_configs:
+  - to: 'mengyuan@tenxcloud.com'
+
+
+https://krizss.github.io/post/2018/10/alertmanager/
+https://www.icode9.com/content-4-168917.html
+http://www.appblog.cn/2019/09/09/Prometheus%20+%20Alertmanager%20%E6%8A%A5%E8%AD%A6%E5%AE%9E%E7%8E%B0%EF%BC%88email%E6%8A%A5%E8%AD%A6%EF%BC%89/
+https://www.ywfuns.com/article/details/27749430/
+
+https://www.cnblogs.com/Mr-Ding/p/9539799.html
+https://blog.csdn.net/weixin_33743661/article/details/94336302

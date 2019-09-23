@@ -1,0 +1,89 @@
+
+
+yum install gcc gcc-c++ perl dos2unix wget git unzip vim telnet epel-release -y
+yum install python-pip -y
+pip install docker-compose
+
+systemctl stop firewalld.service
+systemctl disable firewalld.service
+
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+
+
+mv /etc/localtime{,.bak}
+cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+yum install chrony –y
+systemctl enable chronyd.service && systemctl start chronyd.service && systemctl status chronyd.service
+chronyc sources
+
+
+yum update -y
+yum install -y yum-utils device-mapper-persistent-data lvm2
+yum install awscli -y
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum makecache fast
+ 
+ 
+yum list docker-ce --showduplicates|sort -r
+yum install docker-ce-18.09.7-3.el7 -y
+
+
+sudo usermod -aG docker $(whoami)
+sed -i 's#ExecStart=/usr/bin/dockerd -H fd://#ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 --insecure-registry=registry-1.docker.io --insecure-registry=52.76.119.1:7149 -H unix://var/run/docker.sock#g' /usr/lib/systemd/system/docker.service
+ 
+systemctl daemon-reload
+systemctl restart docker && systemctl enable docker
+systemctl enable docker
+
+
+1.调整同时打开文件数量
+cp /etc/security/limits.conf{,.bak}
+cat >> /etc/security/limits.conf<<EOF
+*        soft    nproc 65535
+*        hard    nproc 65535
+*        soft    nofile 65535
+*        hard    nofile 65535
+EOF
+
+
+cp /etc/security/limits.d/20-nproc.conf{,.bak}
+cat >> /etc/security/limits.d/20-nproc.conf<<EOF
+*          soft    nproc   65535
+*          hard    nproc   65535
+root       soft    nproc   65535
+root       hard    nproc   65535
+EOF
+
+ulimit -a 
+ulimit -n 
+
+2.TCP最大连接数（somaxconn）
+	echo 10000 > /proc/sys/net/core/somaxconn
+3.TCP连接立即回收、回用（recycle、reuse）
+	echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse
+	echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle
+4.不做TCP洪水抵御
+	echo 0 > /proc/sys/net/ipv4/tcp_syncookies
+	
+cp /etc/sysctl.conf{,.bak}
+cat >>/etc/sysctl.conf<<EOF
+net.core.somaxconn = 20480
+net.core.rmem_default = 262144
+net.core.wmem_default = 262144
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 4096 16777216
+net.ipv4.tcp_wmem = 4096 4096 16777216
+net.ipv4.tcp_mem = 786432 2097152 3145728
+net.ipv4.tcp_max_syn_backlog = 16384
+net.core.netdev_max_backlog = 20000
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_max_syn_backlog = 16384
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_tw_recycle = 1
+net.ipv4.tcp_max_orphans = 131072
+net.ipv4.tcp_syncookies = 0
+EOF
+
+sysctl -p

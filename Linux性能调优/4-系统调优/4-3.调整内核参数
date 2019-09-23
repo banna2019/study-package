@@ -1,0 +1,58 @@
+
+
+调整内核参数
+	尽管不推荐用户修改和重编译内核代码,但还是有另外调整内核参数的手段.proc文件系统提供了观察和修改运行中的内核的接口.
+	要观察当前内核配置,找到/proc/sys/目录中某个内核参数文件,使用cat查看内容.在下图中,修改系统的内存过量策略.
+	输出0表示系统在对应用程序分配内存前先检查可用内存量.通过echo命令为该参数提供一个新值,修改内核的这个默认操作,
+	在这里,把0修改为1,1表示内核直接分配内存,不去检查是否有充足的内存可以分配.
+
+	图片(changing-kernel-parameters-via-the-proc-file-system.png)
+
+
+	从上面的演示中可以看到,使用echo和cat可以很方便修改内核参数,几乎在所有带/proc文件系统的操作系统上都可以使用,但是有两个明显的问题.
+		echo命令不能检查参数的一致性.
+		在重启系统之后,所有的内核修改都会丢失.
+
+	为了解决上面的问题,管理员应该使用sysctl来修改内核参数.
+		提示：默认,系统提供了必要模块,让你使用sysctl而不用重启系统.如果你在安装系统的时候去掉这项功能,你就必须重启Linux使得sysctl的修改生效.
+
+	另外,RHEL和SUSE提供图形界面修改sysctl参数.如下图
+		图片(redhat-kernel-tuning.png)
+
+	在基于SUSE的系统,YaST的powerteak优化工具可以用来调优内核参数.
+		图片(the-powertweak-utility.png)
+
+	使用powertweak的好处是,所有调优参数都有简短的说明.所有使用powertweak做出的修改都会存在/etc/powertweak/tweaks文件中
+
+
+
+内核参数存储路径
+	内核参数存储在/proc(一般来说是/proc/sys)目录下.
+	通过/proc目录树下的文件,可以简单的了解与内核、进程、内存、网络以及其它组件相关的参数配置.
+	每一个进程在/proc目录下都有一个以它的PID命令的目录.下表是部分文件所包含内核信息说明.
+		图片(内核目录)
+	
+
+
+使用sysctl命令
+	sysctl使用/proc/sys目录树中的文件名作为参数.例如,shmmax内核参数保存在/proc/sys/kernel/shmmax中,可以使用cat来读取、echo来修改：
+		cat /proc/sys/kernel/shmmax
+			33554432
+		echo 33554430 > /proc/sys/kernel/shmmax
+		cat /proc/sys/kernel/shmmax
+			33554430
+
+
+	然而,使用echo很容易弄错,所以推荐使用sysctl命令,因为它会修改前检查数据一致性,如下:
+		sysctl kernel.shmmax
+			kernel.shmmax = 33554432
+		sysctl -w kernel.shmmax=33554430
+			kernel.shmmax = 33554430
+		sysctl kernel.shmmax
+			kernel.shmmax = 33554430
+
+	上面的修改会在下次重启之后消失.如果想做永久修改,你应该编辑/etc/sysctl.conf文件,添加参数如下：
+		kernel.shmmax = 33554439
+	
+	下次重启系统的时候会读取/etc/sysctl.conf文件,你也可以通过如下的命令,不用重启就让配置生效：
+		sysctl -p

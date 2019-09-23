@@ -1,0 +1,31 @@
+
+1.WEB界面登陆Telegram
+	https://web.telegram.org/#/login
+	截图(web界面登陆telegram-00)
+2.对接Telegram官方接口@BotFather
+	截图(对接Telegram官方接口@BotFather-01.jpg)
+3.输入/newbot命令创建你自己的机器人
+	截图(输入newbot命令创建你自己的机器人-02.jpg)
+4.然后根据提示输入机器人的名称和用户名,用户名必须以bot结尾
+	截图(手动输入bot名称-03.jpg)
+5.这样机器人就创建完成了,返回信息当中的token必须保存好备用
+	截图(bot认证完成信息-04.jpg)
+	
+Done! Congratulations on your new bot.You will find it at t.me/akTetrisBot.You can now add a description,about section and profile picture for your bot,see/help for a list of commands.By the way,when you've finished creating your cool bot,ping our Bot Support if you want a better username for it.Just make sure the bot is fully operational before you do this.
+
+Use this token to access the HTTP API:
+	927656742:AAGS5yTPl46Dg08BBoYYgDHWXOgKO3cg7jk
+	
+	
+6.接下来使用API/bottoken/API方法getMe获取自己的id
+	使用API/bottoken/API方法getMe获取自己的id:
+	curl https://api.telegram.org/bot927656742:AAGS5yTPl46Dg08BBoYYgDHWXOgKO3cg7jk/getMe
+	截图(API方法getMe获取自己的id-08.jpg)
+7.创建group并且添加,创建的机器人:
+	截图(新建group组05.jpg、添加新建机器人06.jpg)
+8.获取群ID:
+	在Telegram新建group,然后添加成员刚创建的机器人,调用API方法getUPdates获取群ID
+	curl https://api.telegram.org/bot927656742:AAGS5yTPl46Dg08BBoYYgDHWXOgKO3cg7jk/getUpdates
+	截图(API方法getUPdates获取群ID-09.jpg)
+	
+	

@@ -1,0 +1,10 @@
+
+数据库新增索引:
+	ALTER TABLE ip ADD INDEX idx_start_ip (ip_start_num);
+	ALTER TABLE ip ADD INDEX idx_end_ip (ip_end_num);
+ 
+ 
+ 
+show processlist;
+
+select id,db,user,host,command,time,state,info from information_schema.processlist order by time desc limit 20; 

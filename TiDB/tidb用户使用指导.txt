@@ -1,0 +1,36 @@
+
+一、TiDB集群IP:
+	外网加内网IP信息:
+	tidb-monitor	IP信息
+	tidb-pd01		IP信息
+	tidb-pd02		IP信息
+	tidb-pd03		IP信息
+	tidb-db01		IP信息
+	tidb-db02		IP信息
+	tidb-kv01		IP信息
+	tidb-kv02		IP信息
+	tidb-kv03		IP信息
+
+二、中控机登陆信息:
+	ssh_user: centos
+	ssh_key: tidb.pem
+	ssh_ip: 54.255.165.106
+	
+三、MySQL客户端连接TiDB;默认4000端口是TiDB服务端口(在中控机上进行操作):
+		sudo mysql -u root -h 10.101.1.195 -P 4000  		#在中控机上这里使用的是tidb-db的内网IP地址
+		
+		备注:
+			连接后端tidb-db服务的其中一台即可:
+					tidb-db01		54.255.200.192/10.101.1.195
+					tidb-db02		13.250.117.104/10.101.1.202
+	
+四、通过浏览器访问TiDB监控服务grafana(访问中控机的外网IP):
+		地址: http://54.255.165.106:3000 
+		默认帐号密码是: admin/admin
+		
+		
+备注: 
+	1.tidb的部署都在(tidb-monitor):
+		/home/tidb/tidb-ansible
+	
+	2.所有服务都使用tidb用户启动

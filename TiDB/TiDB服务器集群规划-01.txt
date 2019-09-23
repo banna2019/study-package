@@ -1,0 +1,35 @@
+
+一、生产环境服务选配:
+	组件	CPU			内存	硬盘类型	网络			    实例数量(最低要求)
+	TiDB	16核+		32 GB+	SAS			万兆网卡（2块最佳）	  2
+	PD		4核+		8  GB+	SSD			万兆网卡（2块最佳）	  3
+	TiKV	16核+		32 GB+	SSD			万兆网卡（2块最佳）	  3
+	监控	8核+		16 GB+	SAS			千兆网卡			  1
+
+
+二、Tidb服务器信息
+外网加内网IP信息:
+tidb-monitor	IP地址
+tidb-pd01		IP地址
+tidb-pd02		IP地址
+tidb-pd03		IP地址
+tidb-db01		IP地址
+tidb-db02		IP地址
+tidb-kv01		IP地址
+tidb-kv02		IP地址
+tidb-kv03		IP地址
+
+
+内网IP信息:
+10.101.1.166 tidb-monitor
+10.101.1.15 tidb-pd01
+10.101.1.42 tidb-pd02
+10.101.1.170 tidb-pd03
+10.101.1.195 tidb-db01
+10.101.1.202 tidb-db02
+10.101.1.222 tidb-kv01
+10.101.1.253 tidb-kv02
+10.101.1.31  tidb-kv03
+
+
+  

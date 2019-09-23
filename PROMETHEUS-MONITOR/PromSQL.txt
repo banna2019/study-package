@@ -1,0 +1,23 @@
+
+		
+	#计算5min为取样每秒的瞬时利用率(5 10 15)
+	100 - avg (irate(node_cpu_seconds_total{instance="10.101.1.98:9100",mode="idle"}[5m])) by (instance) * 100
+	
+	
+	#CPU饱和度(1 5 15,表示多少分钟)
+	count by (instance)(node_cpu_seconds_total{mode="idle"})
+	
+	#磁盘使用率
+	(node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100
+	
+	
+	
+	系统跑的服务:
+		node_systemd_unit_state{instance="10.101.1.98:9100",name="docker.service",state="active"}
+		count(node_systemd_unit_state{instance="10.101.1.98:9100",name="docker.service",state="active"})
+		
+		
+		
+	sum(100 - ((container_spec_memory_limit_bytes{name=~".+"} - container_memory_usage_bytes{name=~".+"})  * 100 / container_spec_memory_limit_bytes{name=~".+"})) by (name)
+	
+	

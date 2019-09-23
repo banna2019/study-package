@@ -1,0 +1,140 @@
+
+网络子系统:
+	网络实现:
+		TCP/IP协议和OSI模型有类似的层级结构.Linux内核的网络实现采用了相似的办法.
+		图片(network-layered-structure-and-overview-of-networking-operation.png)
+		
+		和很多Unix操作系统一样,Linux为TCP/IP网络操作提供套接字(Socket)接口.套接字为用户应用程序提供接口:
+			1.当应用程序要把数据发送给其它主机,应用程序首先创建数据.
+			2.应用程序打开套接字,通过套接字接口写入数据.
+			3.套接字缓冲(socket buffer)是用来处理传输数据的.套接字缓冲中有数据的参考,数据穿过该层,向下传递.
+			4.在每一层,都要做相应的修改,例如修改头部、添加修改包头、校验值、路由、分片等等.当套接字缓冲向下层传递,
+			  数据本身不在层之间复制.因为在各层之间复制数据的效率太低,内核只修改套接字缓冲中的参考并且向下层传递,避免不必要的损耗.
+			5.最后,数据通过网卡进入网线.
+			6.以太帧(Ethernet frame)到达对方的网络接口.
+			7.如果MAC地址和网卡MAC地址匹配的话,分片就接收到网卡缓冲中.
+			8.网卡把数据包移动到套接字缓冲中,触发一次CPU的硬中断.
+			9.然后CPU处理这个数据包,把他一层层向上传递,直到抵达一个应用程序(例如进程的TCP端口),比如Apache
+			
+			
+		套接字缓冲(Socket buffer):
+			内核使用缓冲来发送和接收数据.可以用/proc/sys/net下的文件调整.
+				cat /proc/sys/net/core/rmem_max
+				cat /proc/sys/net/core/rmem_default
+				cat /proc/sys/net/core/wmem_max
+				cat /proc/sys/net/core/wmem_default
+				cat /proc/sys/net/ipv4/tcp_mem
+				cat /proc/sys/net/ipv4/tcp_rmem
+				cat /proc/sys/net/ipv4/tcp_wmem
+				
+			图片(socket-buffer-memory-allocation.png)
+			
+		
+		
+		网络API(Network API,NAPI):
+			新的网络子系统API发生了一些变化.Linux网络栈的标准实现更关注可靠性和低延时,而不是低负载和高吞吐;这个特征虽然有利于创建防火墙.
+
+			在一个典型的网络包处理中,如下图蓝色箭头所描绘的,网卡把数据包移动到操作系统内核的网络缓冲,并且触发一个CPU的硬中断.
+			这只是是进程处理网络包的一个简单视图,但是显示出了这种方法的一个不足.每次当一个MAC地址匹配的以太网帧到达接口,
+			都会引起一次硬中断.无论如何,CPU必须停下正在处理的进程,然后处理这个硬中断,引发一次上下文切换和刷新处理器缓存.
+			如果只有很少的数据包,那这就不是什么大问题.但是,GB级别的以太网卡和现代的应用程序一秒钟能产生数千个包,导致数量庞大的中断和上下文切换.
+
+			图片(the-linux-network-stack.png)
+			
+			因此,Linux引入NAPI来对抗处理网络流量引发的相关开销.对于第一个包,NAPI就和传统的实现一样,触发一次中断.
+			但是第一个包之后的包,接口进入了polling模式.只要还有数据包在网卡DMA 的环状缓冲(ring buffer)中,
+			就不会引发新的中断,从而高效的减少了上下文切换和相关的消耗.在最后的包被处理,环状缓存被清空之后,
+			网卡又回到了中断模式.NAPI的的另一个好处是通过生成能被多处理器支持的软中断,增强了多处理器的扩展.
+			NAPI对大多数企业级种的多处理器操作系统都是巨大的改进,需要NAPI支持的驱动.
+
+
+
+		Netfilter:
+			Linux已经把防火墙作为内核的一部分.这一功能由Netfilter模块提供.可以使用iptables命令来管理和配置Netfilter.
+
+			一般来说,Netfilter提供了如下的几个功能:
+				数据包过滤：如果数据包匹配到一条规则,Netfilter将会接收、拒绝或者根据其它预定的操作来处理这个数据包.
+				地址翻译：如果数据包匹配到一条规则,Netfilter会根据地址翻译的需求修改这个数据包.
+
+				匹配过滤器可以定义如下的属性:
+					网络接口(Network Interface)
+					IP地址,IP地址范围,子网(IP address,IP address range,subnet)
+					协议(Protocol)
+					ICMP类型(ICMP Type)
+					端口(Port)
+					TCP标志(TCP flag)
+					状态(state)
+					
+			图片(netfilter-packet-flow.png)
+			
+			如果匹配到规则,Netfilter将会采取相应的操作,这个操作被叫做目标(target),下面是一些可用的target.
+				ACCEPT：接受包,并且放行.
+				DROP：丢弃包
+				REJECT：丢弃包,并且回复一个消息,例如ICMP端口不可达、TCP重置源主机.
+				LOG：记录匹配的包
+				MASQUERADE, SNAT, DNAT, REDIRECT：地址翻译(NAT)
+
+
+		连接追踪(Connection tracking)
+			为了满足更多的防火墙功能,Netfilter使用连接追踪机制,跟踪所有网络流量的状态.通过TCP连接状态和其它网络属性(IP地址,端口,协议,序列号,ack,ICMP类型,等),Netfilter把每一个包分类到下面四个状态.
+				NEW：尝试建立新连接的包
+				ESTABLISHED：已建立连接的包
+				RELATED：和前面的包相关的包
+				INVALID：因为异常或者非法的不知状态的包
+
+			作为补充,Netfilter可以使用其它模块,通过分析协议特定属性和操作进行更详细的连接跟踪.例如,有FTP、NetBIOS、TFTP、IRC的连接跟踪模块.
+
+
+
+	TCP/IP
+		TCP/IP一直是默认的网络协议.Linux上的TCP/IP实现是十分契合TCP/IP标准的.为了更好的性能优化,应该熟悉基本的TCP/IP网络.
+		
+		连接建立
+			在应用数据传输之前,服务器和客户端就应该建立起连接,连接建立的过程叫做TCP/IP三次握手.下图展示了基本的连接建立和中断过程.
+			
+			客户端发送SYN包（带有SYN标志设置的包）到服务器,请求连接
+			服务器收到SYN请求包,回复一个SYN+ACK的包
+			然后客户端发送ACK包给服务器完成连接建立.
+			
+			一旦建立起连接,应用数据就可以通过这个连接来传送,在所有的数据传输完成之后,连接关闭.
+
+				1.客户端发送FIN包给服务器,开始终止连接的过程.
+				2.服务器回复一个ACK的确认包回去,如果再没有数据要发送给客户端,服务器然后发送一个FIN包给客户端.
+				3.客户端发送一个ACK包给服务器,完成连接终止.
+				
+			图片(tcp-3ways-handshake.png)
+			
+			在回话期间,连接状态会发生改变.
+				图片(tcp-connection-state-diagram.png)
+			
+		流量控制(Traffic control)
+			TCP/IP有一种机制,确保即使在拥挤时段和网络传输质量恶劣的情况下,高效数据传输！
+
+		TCP/IP滑动窗口(TCP/IP transfer window)
+			滑动窗口是Linux操作系统上TCP/IP实现的重要组成.基本上,TCP滑动窗口就是在发送数据之前,
+			一台机器和对方机器确认能发送和接收的最大数据量的机制.窗口大小放在TCP头的滑动窗口字段中,由接受端传递给发送端.
+			使用滑动窗口可以使数据传递更加高效,因为发送主机不必等待每一个数据包的确认.这使得网络更加有效利用,也提高了延迟确认效率.
+			在连接中,TCP窗口从很小开始,随着收到每一个对端的确认而慢慢增长.
+			
+			图片(sending-window-and-delayed-ack.png)
+			另外,高速网络可以使用叫做window scaling的技术来增加滑动窗口的大小.
+
+		重传
+			在连接建立、终止和数据传输过程中,由于各种原因(网络接口故障,路由器太慢,网络拥堵,网络实现的问题等等),会发生许多超时和数据重传.
+			 TCP/IP通过数据包排队和多次重传数据包来解决这个问题.
+			可以配置参数来改变内核行为.可能想在高丢包率的网络中,增加TCP SYN建立连接包的尝试次数.
+			 也通过/proc/sys/net下的文件改变超时阀值.
+			 
+			 ls /proc/sys/net/
+
+
+	Offload
+			如果网卡适配器支持硬件offload功能,内核可以卸载适一部分任务给适配器,从而减轻CPU的负载.
+			校验值卸载(Checksum offload)
+				TCP/IP/UDP校验值是协议头部的字段,由包数据计算获得,通过比较校验值可以保证数据包被正确的发送！
+			TCP分片卸载(TCP segmentation offload,TSO)
+				如果数据比网卡支持的最大传输单元(maximum transmission unit,MTU)更大,这个数据就要分割成小于或等于MTU大小的包.适配器的这个选项由内核指定.
+
+		绑定模式
+			利用bonding驱动,Linux内核提供网卡聚合功能.这是一个设备无关的绑定驱动(也有些设备需要特定的驱动).
+			bonding驱动支持802.3链路聚合和一些负载均衡和容错实现.可以获得高级别的可靠性和性能提升

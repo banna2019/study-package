@@ -1,0 +1,92 @@
+
+一、自建数据库授权
+	create user 'maxwell'@'%' identified by '123456';
+	grant all on maxwell.* to 'maxwell'@'%';
+	grant select,replication client,replication slave on *.* to 'maxwell'@'%';
+     
+
+二、安装JDK环境
+
+tar xf jdk-8u211-linux-x64.tar.gz  -C /usr/local/
+
+cat >>/etc/profile<<EOF
+export JAVA_HOME=/usr/local/jdk1.8.0_211 
+export JRE_HOME=\$JAVA_HOME/jre 
+export CLASSPATH=.:\$JAVA_HOME/lib:\$JRE_HOME/lib 
+export PATH=\$JAVA_HOME/bin:\$PATH
+EOF
+
+source /etc/profile
+
+
+三、安装配置zookeeper和kafka服务
+
+	wget http://apache.website-solution.net/kafka/2.3.0/kafka_2.12-2.3.0.tgz 
+	tar kafka_2.12-2.3.0.tgz  && kafka_2.12-2.3.0 /opt/kafka
+
+	mkdir -pv /opt/kafka/{zrun,krun}
+
+	echo -e "#ZK PATH\nexport PATH=\$PATH:/opt/kafka/bin" >>/etc/profile
+	source /etc/profile
+
+
+	#创建topic
+	kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic maxwell  
+	kafka-topics.sh --list --zookeeper localhost:2181		#列出所有topic
+
+	#启动生产者发送消息
+	kafka-console-producer.sh --broker-list localhost:9092 --topic maxwell
+
+
+	#在另一个终端启动消费者消查看信息输出
+	bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic maxwell --from-beginning
+
+
+	依赖包安装(python对kafka的依赖包):
+		sudo yum install protobuf-devel leveldb-devel snappy-devel opencv-devel boost-devel hdf5-devel
+		sudo yum install gflags-devel glog-devel lmdb-devel
+		sudo yum install openblas-devel
+
+		pip install python-snappy
+		pip install kafka-python
+		
+		
+四、部署maxwell
+	wget https://github.com/zendesk/maxwell/releases/download/v1.22.3/maxwell-1.22.3.tar.gz
+	tar xf maxwell-1.22.3.tar.gz && maxwell /opt/
+
+	echo -e "#MaxWell PATH\nexport PATH=\$PATH:/opt/maxwell/bin" >>/etc/profile
+	source /etc/profile
+	
+	
+	#修改maxwell配置信息
+	vim config.properties
+	
+log_level=info
+producer=kafka
+kafka.bootstrap.servers=localhost:9092
+host=172.31.31.118
+user=maxwell
+password=123456
+output_ddl=true
+kafka_topic=maxwell
+kafka.compression.type=snappy
+kafka.retries=0
+kafka.acks=1
+
+	maxwell --config=/opt/maxwell/config.properties  --daemon
+
+
+	#maxwell启动参数
+	
+--config                            location of config file                                                                           
+--env_config_prefix                 prefix of env var based config, case insensitive                                                  
+--log_level                         log level, one of DEBUG|INFO|WARN|ERROR                                                           
+--daemon                            daemon, running maxwell as a daemon                                                               
+
+--host                              mysql host with write access to maxwell database                                                  
+--port                              port for host                                                                                     
+--user                              username for host                                                                                 
+--password                          password for host                                                                                 
+--jdbc_options                      additional jdbc connection options                                                                
+--ssl     

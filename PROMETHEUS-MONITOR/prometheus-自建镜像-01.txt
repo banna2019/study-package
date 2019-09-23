@@ -1,0 +1,39 @@
+
+一、自建prometheus镜像
+go get github.com/prometheus/prometheus
+cd go/src/github.com/prometheus/prometheus
+
+wget https://github.com/prometheus/prometheus/releases/download/v2.11.1/prometheus-2.11.1.linux-amd64.tar.gz
+tar xf prometheus-2.11.1.linux-amd64.tar.gz
+
+mkdir -pv .build/linux-amd64
+cp prometheus-2.11.1.linux-amd64/prometheus .build/linux-amd64/
+cp prometheus-2.11.1.linux-amd64/promtool  .build/linux-amd64/
+
+docker build -t prometheus:v1.0 .
+
+
+二、宿主机上创建volue挂载的相关目录
+mkdir -pv /data/prometheus/{data,config,rules,discovery}
+chmod -R 0777 /data
+
+
+三、启动prometheus容器
+1.挂载rules的启动方式
+docker run -d --net=host -v /data/prometheus/rules/rules.yml:/etc/prometheus/rules/rules.yml -v /data/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml -v /data/prometheus/data:/prometheus -v /data/prometheus/discovery:/etc/prometheus/discovery --name prometheus-banna prometheus:v1.0
+
+
+2.不带rules的启动方式
+docker run --name prometheus-banna -p 9090:9090 -d -v /data/prometheus/data:/prometheus -v /data/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml prometheus:v1.0
+
+3.在线热加载配置
+curl -X POST "http://localhost:9090/-/reload"
+
+
+
+#参考
+docker run --name prometheus-banna -d  -v /data/prometheus:/etc/prometheus:rw  -v /data/prometheus/data:/prometheus:rw prom/prometheus:v2.11.1
+
+
+
+

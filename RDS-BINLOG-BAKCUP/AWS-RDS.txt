@@ -1,0 +1,27 @@
+
+root/27jq7bhfO81B6qqNZfx6jK0R
+
+mysql -hbanna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com  -uroot -p27jq7bhfO81B6qqNZfx6jK0R
+
+mysqlbinlog --host=banna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com --port=3306 --user='root' --password='27jq7bhfO81B6qqNZfx6jK0R' --raw --result-file=/data/ 
+
+mysql -hbanna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com  -uroot -p27jq7bhfO81B6qqNZfx6jK0R -e "show binary logs;" 2>/dev/null |grep "mysql-bin*"|awk '{print $1}'
+
+
+for i in `mysql -hbanna-mysql.ccrj65bnfxba.ap-southeast-1.rds.amazonaws.com  -uroot -p27jq7bhfO81B6qqNZfx6jK0R -e "show binary logs;" 2>/dev/null |grep "mysql-bin*"|awk '{print $1}'|xargs`;do echo $i ;done
+
+
+
+AWS RDS需要设置:
+	配置二进制日志清除时间:
+		call mysql.rds_show_configuration;
+		call mysql.rds_set_configuration('binlog retention hours', 24);
+
+
+	配置远程备份binlog需要的用户权限:
+		1.自建MySQL数据用户授权
+			GRANT SUPER,REPLICATION CLIENT,REPLICATION SLAVE ON *.* to 'rep1'@'%' identified by 'rep1abc';
+			FLUSH PRIVILEGES;
+			
+		2.RDS直接使用原始root用户和密码(因为root用户默认没有"Super_priv"权限)
+			

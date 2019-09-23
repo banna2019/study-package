@@ -1,0 +1,73 @@
+外部服务发现之ingress:
+	Kubernetes集群内部使用kube-dns实现服务发现的功能,那么我们部署在Kubernetes集群中的应用如何暴露给外部的用户使用呢？使用NodePort和LoadBlancer类型的Service 可以实现把应用暴露给外部用户使用,除此之外,Kubernetes还提供了一个非常重要的资源对象可以用来暴露服务给外部用户,那就是ingress.对于小规模的应用使用NodePort或许能够满足我们的需求,但是当应用越来越多的时候,就会发现对于NodePort的管理就非常麻烦了,这个时候使用ingress 就非常方便了,可以避免管理大量的Port.
+
+一、介绍
+	Ingress其实就是从kuberenets集群外部访问集群的一个入口,将外部的请求转发到集群内不同的Service上,其实就相当于nginx、haproxy等负载均衡代理服务器,但是只使用nginx、haproxy方式有很大缺陷,每次有新服务加入的时候怎么改nginx、haproxy配置？不可能手动更改或者滚动更新前端的nginx、haproxy Pod吧？那再加上一个服务发现的工具比如consul如何？貌似是可以？而且在之前单独使用docker的时候,这种方式已经使用得很普遍了,Ingress 实际上就是这样实现的,只是服务发现的功能自己实现了,不需要使用第三方的服务了,然后再加上一个域名规则定义,路由信息的刷新需要一个靠Ingress controller来提供.
+	Ingress controller可以理解为一个监听器,通过不断地与kube-apiserver打交道,实时的感知后端service、pod的变化,当得到这些变化信息后,Ingress controller再结合Ingress 的配置,更新反向代理负载均衡器,达到服务发现的作用.其实这点和服务发现工具consul consul-template非常类似.
+	现在可以供大家使用的Ingress controller有很多,比如traefik、nginx-controller、Kubernetes Ingress Controller for Kong、HAProxy Ingress controller,当然也可以自己实现一个Ingress Controller,现在普遍用得较多的是traefik和nginx-controller,traefik的性能较nginx-controller差,但是配置使用要简单许多.
+
+二、Traefik:
+	Traefik是一款开源的反向代理与负载均衡工具.它最大的优点是能够与常见的微服务系统直接整合,可以实现自动化动态配置.目前支持Docker、Swarm、Mesos/Marathon、 Mesos、Kubernetes、Consul、Etcd、Zookeeper、BoltDB、Rest API等等后端模型.
+	图片(traefik-architecture)
+
+	要使用traefik,同样需要部署traefik的Pod,由于演示的集群中只有master节点有外网网卡,所以这里只有master这一个边缘节点,将traefik部署到该节点上即可.
+
+
+三、Traefik部署(使用traefik-ori目录下yaml文件):
+	一、NodePort访问Traefik服务创建
+		kubectl apply -f traefik-rbac.yaml 			#创建traefik rbac权限
+		kubectl apply -f traefik-deploy.yaml		#配置nodeport访问的 traefik服务
+		kubectl apply -f ingress.yaml				#配置nodeport+域名的traefil服务
+		
+		kubectl get ingress -n kube-system
+		kubectl get pod,svc -n  kube-system
+		kubectl describe ingress traefik-web-ui -n kube-system
+
+		NodePort方式访问:
+			54.169.70.44:30827
+			traefik.haimaxy.com:30827
+
+
+		ingress.yaml
+		traefik-rbac.yaml
+		traefik-deploy.yaml
+
+		由于这里的特殊性,只有master节点有外网访问权限,所以我们使用nodeSelector标签将traefik的固定调度到master这个节点上,那么上面的tolerations是干什么的呢？这个是因为集群使用的kubeadm 安装的,master节点默认是不能被普通应用调度的,要被调度的话就需要添加这里的tolerations属性,当然如果集群不太一样,直接去掉这里的调度策略就行.
+		nodeSelector和tolerations都属于Pod的调度策略.
+		要注意上面traefik-deploy.yaml文件:
+			tolerations:
+			- operator: "Exists"
+			nodeSelector:
+			  kubernetes.io/hostname: n1(为master的hostname 名称"kubectl show --labels")
+
+
+		kubectl get pods -n kube-system -l k8s-app=traefik-ingress-lb -o wide		#访问traefikweb ui界面
+
+
+	二、hostPort(80)访问traefik服务(此操作是在上面"一"的操作上进行的)
+		traefik-deploy.yaml		#添加hostPort	
+		
+			containers:
+			- image: traefik
+			name: traefik-ingress-lb
+			ports:
+			- name: http
+			  containerPort: 80
+			  hostPort: 80
+			- name: admin
+			  containerPort: 8080
+
+		kubectl apply -f traefik-deploy.yaml
+		kubectl get ingress -n kube-system
+		kubectl get pod,svc -n  kube-system
+		kubectl describe ingress traefik-web-ui -n kube-system
+		kubectl get pods -n kube-system -l k8s-app=traefik-ingress-lb -o wide
+		
+		
+		hostPort方式访问(直接通过80端口访问):
+			54.169.70.44
+			traefik.haimaxy.com			#域名访问需要做本地hosts解析
+		
+
+  参考博客: https://www.qikqiak.com/k8s-book/docs/40.ingress.html
+	

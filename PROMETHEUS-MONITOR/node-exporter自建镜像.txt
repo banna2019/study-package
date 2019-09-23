@@ -1,0 +1,45 @@
+
+一、自建node-exporter镜像
+go get github.com/prometheus/node_exporter
+cd /root/go/src/github.com/prometheus/node_exporter
+
+wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+tar xf node_exporter-0.18.1.linux-amd64.tar.gz
+
+mkdir -pv .build/linux-amd64/
+
+cp node_exporter-0.18.1.linux-amd64/node_exporter  .build/linux-amd64/
+
+docker build -t node_exporter:v1.0 .
+
+
+
+二、启动node-exporter容器
+#挂载部分到宿主机(不完整)
+docker run --name node-exporter-banna -d \
+  --net="host" \
+  --pid="host" \
+  -v "/:/host:ro,rslave" \
+  node_exporter:v1.0 \
+  --path.rootfs /host
+
+
+#比较完整的(带监控systemd系统服务监控的)
+docker run --name node-exporter-banna -d \
+  --restart=always \
+  -v "/proc:/host/proc" \
+  -v "/sys:/host/sys" \
+  -v "/:/rootfs" \
+  -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket \
+  --net=host \
+  --pid="host" \
+  node_exporter:v1.0 \
+  --path.procfs /host/proc \
+  --path.sysfs /host/sys \
+  --collector.systemd \
+  --collector.tcpstat \
+  --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc)($|/)"
+  
+  
+  
+  

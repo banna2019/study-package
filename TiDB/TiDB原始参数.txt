@@ -1,0 +1,43 @@
+
+
+innodb_sort_buffer_size             | 1048576(1M)       
+innodb_buffer_pool_instances        | 8             
+innodb_log_buffer_size              | 8388608 
+innodb_buffer_pool_size             | 134217728(128M)  			23622320128     70%  
+
+           
+innodb_change_buffering             | all           
+innodb_change_buffer_max_size       | 25 
+
+
+innodb_buffer_pool_load_at_startup  | 1 
+innodb_buffer_pool_dump_at_shutdown | 0 
+innodb_buffer_pool_load_abort       | 0 
+innodb_buffer_pool_filename         | ib_buffer_pool
+innodb_buffer_pool_load_now         | 0             
+innodb_buffer_pool_dump_now         | 0 
+
+
+
+
+read_rnd_buffer_size                | 262144(0.25M)        
+join_buffer_size                    | 262144(0.25M) 
+key_buffer_size                     | 8388608(8M)       
+read_buffer_size                    | 131072(0.125M)
+sort_buffer_size                    | 262144(0.25M)
+bulk_insert_buffer_size             | 8388608(8M)
+myisam_sort_buffer_size             | 8388608(8M)
+
+
+
+
+
+
+ndb_eventbuffer_max_alloc           |                    
+preload_buffer_size                 | 32768               
+innodb_buffer_pool_dump_pct         |               
+                
+sql_buffer_result                   | OFF           
+ndb_eventbuffer_free_percent        |                         
+net_buffer_length                   | 16384         
+            

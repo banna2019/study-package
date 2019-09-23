@@ -1,0 +1,24 @@
+[Unit]
+Description=Prometheus
+Documentation=https://prometheus.io/
+Wants=network-online.target
+After=network-online.target
+ 
+[Service]
+Type=simple
+User=prometheus
+Group=prometheus
+ExecStart=/etc/prometheus/prometheus \\ 
+    ----log.level=warn \\
+    --config.file=/etc/prometheus/prometheus.yml \\
+	--storage.tsdb.path=/data/prometheus \\
+	--storage.tsdb.retention=30 \\
+	--web.console.templates=/etc/prometheus/console \\
+	--web.enable-lifecycle \\
+    --web.enable-admin-api \\
+	--web.console.libraries=/etc/prometheus/console_libraries
+	
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

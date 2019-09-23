@@ -1,0 +1,11 @@
+groups:
+- name: example
+  rules:
+  - alert: InstanceDown
+    expr: up == 1
+    for: 1m
+    labels:
+      user: prometheus
+    annotations:
+      summary: "Instance {{ $labels.instance }} is Up"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} Current is Up State!."

@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus node_exporter
+Documentation=https://prometheus.io/
+After=network.target
+
+[Service]
+Type=simple
+User=prometheus
+ExecStart=/etc/node_exporter/node_exporter --collector.systemd --log.level=error
+ExecStop=/usr/bin/killall node_exporter
+Restart=on-failure
+MemoryLimit=300M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target

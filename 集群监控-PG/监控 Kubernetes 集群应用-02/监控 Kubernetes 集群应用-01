@@ -1,0 +1,87 @@
+
+现在很多服务从一开始就内置了一个/metrics接口,比如Kubernetes的各个组件、istio服务网格都直接提供了数据指标接口.有一些服务即使没有原生集成该接口,也完全可以使用一些exporter 来获取到指标数据,比如mysqld_exporter、node_exporter,这些exporter就有点类似于传统监控服务中的agent,作为一直服务存在,用来收集目标服务的指标数据然后直接暴露给Prometheus.
+
+一、普通应用监控(traefik监控依赖"Traefik-Ingress"目录下面的配置文件项目)
+	采用的是Traefik作为我们的ingress-controller,是Kubernetes集群内部服务和外部用户之间的桥梁.Traefik本身内置了一个/metrics的接口,但是需要我们在参数中配置开启:
+	在traefik.toml中添加如下段落
+
+[metrics]
+  [metrics.prometheus]
+    entryPoint = "traefik"
+    buckets = [0.1, 0.3, 1.2, 5.0]
+
+	备注: Traefik-Ingress提前配置好 traefik的metrics配置
+
+	之前的版本中是通过--web和--web.metrics.prometheus两个参数进行开启的,要注意查看对应版本的文档。
+ 	traefik官网: https://docs.traefik.io/configuration/metrics/#prometheus
+	
+
+	编辑prometheus configmap
+	vim prome-cm.yaml		#添加traefik配置项目
+	 
+		 - job_name: 'traefik'
+		  static_configs:
+			- targets: ['traefik-ingress-service.kube-system.svc.cluster.local:8080']
+	 
+		basic_auth和bearer_token：比如提供的/metrics接口需要basic认证的时候,通过传统的用户名/密码或者在请求的header中添加对应的token都可以支持
+		kubernetes_sd_configs或consul_sd_configs：可以用来自动发现一些应用的监控数据
+
+	由于这里Traefik对应的servicename是traefik-ingress-service,并且在kube-system这个namespace下面,
+	所以这里的targets的路径配置则需要使用FQDN的形式：traefik-ingress-service.kube-system.svc.cluster.local,
+	当然如果Traefik和Prometheus都部署在同一个命名空间的话,则直接填servicename:serviceport即可.然后重新更新这个ConfigMap资源对象：
+	 
+		kubectl apply -f prome-cm.yaml 
+		kubectl get cm -n kube-ops
+		kubectl describe cm prometheus-config -n kube-ops
+		
+
+	现在Prometheus的配置文件内容已经更改了,隔一会儿被挂载到Pod中的prometheus.yml文件也会更新,
+	由于之前的Prometheus启动参数中添加了--web.enable-lifecycle参数,所以现在只需要执行一个reload命令即可让配置生效:
+
+		kubectl get pod,svc -n kube-ops
+		curl -X POST "http://10.110.108.43:9090/-/reload"
+		curl 10.103.120.133:8080/metrics			#使用curl检查是否开启了Prometheus指标数据接口,或者通过NodePort访问也可以
+		
+		备注: 由于ConfigMap通过Volume的形式挂载到Pod中去的热更新需要一定的间隔时间才会生效,所以需要稍微等一小会儿.
+		reload这个url是一个POST请求所以这里通过service的CLUSTER-IP:PORT就可以访问到这个重载的接口,这个时候我们再去看Prometheus的Dashboard中查看采集的目标数据:
+			截图(Prometheus-target.jpg)
+
+
+
+二、使用exporter监控应用:
+
+	有一些应用可能没有自带/metrics接口供Prometheus使用,在这种情况下,就需要利用exporter服务来为Prometheus提供指标数据了
+	Prometheus官方为许多应用就提供了对应的exporter应用,也有许多第三方的实现,可以前往官方网站进行查看: exporters
+
+	比如这里通过一个redis-exporter的服务来监控redis服务,对于这类应用,一般会以sidecar的形式和主应用部署在同一个Pod中,
+	比如这里来部署一个redis应用,并用redis-exporter的方式来采集监控数据供Prometheus使用,如下资源清单文件: (prome-redis.yaml)
+
+	kubectl apply -f prome-redis.yaml	
+	
+		备注: 在prome-redis.yaml中包含了两个容器,一个就是redis本身的主应用,另外一个容器就是redis_exporter.现在直接创建上面的应用: 
+		
+	kubectl get pods -n kube-ops
+	kubectl get svc -n kube-ops
+	
+	curl 10.110.56.252:9121/metrics		#获取redis监控的metrics值
+	
+	
+	vim prome-cm.yaml 		#添加redis监控的job
+	
+- job_name: 'redis'
+  static_configs:
+  - targets: ['redis:9121']
+  
+		备注: 由于这里的redis服务和Prometheus处于同一个namespace,所以我们直接使用service name即可
+		
+	kubectl apply -f prome-cm.yaml 		#重新应用prometheus的mapconfig
+	
+	curl -X POST "http://10.110.108.43:9090/-/reload"		#reload加载配置
+	
+	
+	再去看Prometheus的Dashboard中查看采集的目标数据:
+		截图(promethues-redis-traget.jpg)
+
+
+
+参考博客: https://www.qikqiak.com/k8s-book/docs/53.%E7%9B%91%E6%8E%A7Kubernetes%E9%9B%86%E7%BE%A4%E5%BA%94%E7%94%A8.html

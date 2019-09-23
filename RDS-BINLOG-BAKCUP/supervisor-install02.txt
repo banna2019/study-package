@@ -1,0 +1,98 @@
+一、安装supervisor
+	yum install gcc gcc-c++ epel-release -y 
+	yum install python-pip -y 
+
+	pip install supervisor
+
+	supervisord -v
+
+	mkdir /usr/local/supervisor
+	mkdir /var/log/supervisor
+	mkdir /etc/supervisor.d
+
+
+二、调整supervisor配置
+	echo_supervisord_conf > /etc/supervisord.conf
+
+	cp /etc/supervisord.conf{,.bak}
+	vim /etc/supervisord.conf
+
+[inet_http_server] 
+port=0.0.0.0:80   
+username=admin  
+password=admin123  
+
+[include]
+files = /etc/supervisor.d/*.ini
+
+
+三、配置任务运行daemon
+
+	mkdir -pv /data/project_name/{bakbin,baksql,scripts,logs}
+	chmod -R 777 /data
+
+	vim /etc/supervisor.d/project_name_logbin.ini
+	
+[program:binlog]
+directory = /data/project_name/scripts
+command = /bin/bash /data/project_name/scripts/baklogs.sh 
+autostart = true     
+startsecs = 5       
+autorestart = true 
+startretries = 3   
+user = root  
+redirect_stderr = true 
+stdout_logfile_maxbytes = 20MB 
+stdout_logfile_backups = 20 
+stdout_logfile = /data/project_name/logs/project_name_logbin.log
+
+
+	vim /etc/supervisor.d/project_name_sql.ini
+	
+[program:to-sql]
+directory = /data/project_name/scripts
+command = /bin/bash /data/project_name/scripts/sql.sh
+autostart = true     
+startsecs = 5       
+autorestart = true 
+startretries = 3   
+user = root  
+redirect_stderr = true 
+stdout_logfile_maxbytes = 20MB 
+stdout_logfile_backups = 20 
+stdout_logfile = /data/project_name/logs/project_name_sql.log
+	
+	
+	备注: 此阶段的project_name需要修改为具体的项目名称
+
+
+四、CentOS7启动脚本
+	
+	vim /usr/lib/systemd/system/supervisor.service
+
+[Unit]
+Description=supervisor
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/supervisord -c /etc/supervisord.conf
+ExecStop=/usr/bin/supervisorctl $OPTIONS shutdown
+ExecReload=/usr/bin/supervisorctl $OPTIONS reload
+KillMode=process
+Restart=always
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target
+
+
+	chmod 0644 /usr/lib/systemd/system/supervisor.service
+
+	systemctl start supervisor.service
+	systemctl stop supervisor.service
+	systemctl restart supervisor.service
+	systemctl reload supervisor.service
+	systemctl status supervisor.service
+	systemctl enable supervisor.service
+

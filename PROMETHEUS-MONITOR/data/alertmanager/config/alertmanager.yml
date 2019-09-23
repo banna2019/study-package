@@ -1,0 +1,32 @@
+global:
+  smtp_smarthost: 'smtp.mail.us-east-1.awsapps.com:465'
+  smtp_from: 'banna@sixthnet.com'
+  smtp_auth_username: 'banna@sixthnet.com'
+  smtp_auth_password: 'lvO3UI2mi-TM'
+  smtp_require_tls: false
+  resolve_timeout: 5m
+templates:
+  - 'template/*.tmpl'
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1m
+  receiver: 'default'
+receivers:
+  - name: 'default'
+    email_configs:
+    - to: 'banna@sixthnet.com'
+    #- to: 'ops@sixthnet.com'
+    #  html: '{{ template "email.html" . }}'
+      headers: { Subject: "[WARN] 报警邮件"}
+      send_resolved: true
+    webhook_configs:
+    - url: http://china-jiajia:JinG602162545@10.5.11.59:9119/alert
+      send_resolved: true
+inhibit_rules: 
+  - source_match: 
+      severity: 'critical' 
+    target_match: 
+      severity: 'warning' 
+    equal: ['alertname']

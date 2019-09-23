@@ -1,0 +1,15 @@
+
+server端:
+yum install nfs-utils -y
+mkdir -pv /data/k8s
+
+cat >/etc/exports<<EOF
+/data/k8s *(rw,no_root_squash)
+EOF
+
+systemctl start nfs
+
+
+client端:
+	yum install nfs-utils -y
+	

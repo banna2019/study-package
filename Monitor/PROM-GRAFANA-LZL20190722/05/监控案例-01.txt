@@ -1,0 +1,179 @@
+
+监控案例:
+	1.监控Linux服务器:
+		node_exporter: 用于*NIX系统监控,使用Go语言编写的收集器
+		使用文档：https://prometheus.io/docs/guides/node-exporter/
+		GitHub：https://github.com/prometheus/node_exporter
+		exporter列表：https://prometheus.io/docs/instrumenting/exporters/
+		
+		tar xf node_exporter-0.18.1.linux-amd64.tar.gz  
+		mv node_exporter-0.18.1.linux-amd64 /opt/node_exporter
+		chown -R prometheus.root /opt/node_exporter
+		vim /usr/lib/systemd/system/node_exporter.service
+		chmod 0644 /usr/lib/systemd/system/node_exporter.service
+		chmod -R 0755 /opt/node_exporter
+		systemctl daemon-reload
+		systemctl start node_exporter
+		systemctl status node_exporter
+		
+		curl http://localhost:9100/metrics
+
+
+		Node_EXPORTER配置:
+			vim  prometheus.yml
+- job_name: 'node1'
+  file_sd_configs:
+   - files: ['/opt/prometheus/config/*.yml']
+     refresh_interval: 5s
+	 
+	 
+			vim config/node.yml
+				- targets: ['localhost:9100']
+
+
+			./promtool  check config prometheus.yml
+			curl -X POST "http://localhost:9090/-/reload"
+		
+		
+		
+		
+	2.监控CPU,内存,硬盘CPU:
+		CPU使用率:
+			100-(avg(irate(node_cpu_seconds_total{mode="idle"}[5m]))by(instance)*100)
+		内存使用率:
+			100-(node_memory_MemFree_bytes+node_memory_Cached_bytes+node_memory_Buffers_bytes)/node_memory_MemTotal_bytes*100
+		磁盘使用率:
+			100 - node_filesystem_free_bytes{mountpoint="/",fstype=~"ext4|xfs"}/node_filesystem_size_bytes{mountpoint="/",fstype=~"ext4|xfs"}*100
+			
+
+	3.监控服务运行状态:
+		ExecStart=/opt/node_exporter/node_exporter --collector.systemd --log.level=error
+		(node_exporter --collector.systemd --collector.systemd.unit-whitelist=(docker|sshd|nginx).service)	#备选方案
+			
+			PromeSQL:
+				node_systemd_unit_state{job="node1",name="docker.service"}
+				node_systemd_unit_state{job="node1",name="prometheus.service"}
+
+	4.Grafana炫图展示监控数据:
+		Grafana是一个开源的度量分析和可视化系统
+			截图(01)
+			
+		https://grafana.com/grafana/download
+		https://grafana.com/dashboards/9276
+		
+		https://github.com/grafana/grafana		#docker build可以查看github
+		https://grafana.com/grafana/download?platform=linux
+
+		wget https://dl.grafana.com/oss/release/grafana-6.2.5-1.x86_64.rpm 
+		sudo yum localinstall grafana-6.2.5-1.x86_64.rpm 
+
+		systemctl start grafana-server.service
+
+		访问: IP:3000
+		添加数据源配置:
+			截图(01)
+		
+		
+	5.监控Docker服务器:
+		cAdvisor(Container Advisor)用于收集正在运行的容器资源使用和性能信息
+		https://github.com/google/cadvisor
+		https://grafana.com/dashboards/193		#gafana 模板文件导入
+		
+		docker运行cadvisor:
+sudo docker run \
+  --volume=/:/rootfs:ro \
+  --volume=/var/run:/var/run:ro \
+  --volume=/sys:/sys:ro \
+  --volume=/var/lib/docker/:/var/lib/docker:ro \
+  --volume=/dev/disk/:/dev/disk:ro \
+  --publish=8080:8080 \
+  --detach=true \
+  --name=cadvisor \
+  google/cadvisor:latest
+  
+  
+		访问metrics:
+			IP:8080/metrics
+	
+		vim prometheus.yml
+- job_name: 'docker_service'
+  file_sd_configs:
+   - files: ['/opt/prometheus/config/*.yml']
+     refresh_interval: 5s
+			 
+		vim config/docker.yml
+			- targets: ['localhost:8080']
+	
+	
+		./promtool check config prometheus.yml
+		curl -X POST "http://localhost:9090/-/reload"
+		
+		
+	6.监控MySQL服务器:
+		mysql_exporter: 用于收集MySQL性能信息
+		https://github.com/prometheus/mysqld_exporter
+		https://grafana.com/dashboards/7362				#grafana模板文件
+		
+		
+		yum安装配置mysql服务:
+vim /etc/yum.repos.d/mysql.repo
+# Enable to use MySQL 5.7
+[mysql57-community]
+name=MySQL 5.7 Community Server
+baseurl=http://repo.mysql.com/yum/mysql-5.7-community/el/7/$basearch/
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-mysql
+
+			yum makecache
+			yum install mysql-community-server -y 	
+			systemctl start mysqld
+
+			vim /etc/my.cnf
+				validate_password=off
+				
+			systemctl restart mysqld
+
+			grep "localhost" /var/log/mysqld.log 
+			mysql -uroot -pqjutq2Mhfh.W
+
+			alter user user() identified 'abc123';
+			
+		
+		配置监控用户权限:
+			CREATE USER 'exporter'@'localhost' IDENTIFIED BY 'abc123' WITH MAX_USER_CONNECTIONS 3;
+			GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'localhost';
+			flush privileges;
+			
+		
+		
+		wget https://github.com/prometheus/mysqld_exporter/releases/download/v0.12.0/mysqld_exporter-0.12.0.linux-amd64.tar.gz
+		tar xf mysqld_exporter-0.12.0.linux-amd64.tar.gz 
+		mv mysqld_exporter-0.12.0.linux-amd64 /opt/mysqld_exporter
+		vim /usr/lib/systemd/system/mysqld_exporter.service
+		chmod 0644 /usr/lib/systemd/system/mysqld_exporter.service
+
+		vim /opt/mysqld_exporter/.my.cnf
+[client]
+user=exporter
+password=abc123
+
+		chown -R prometheus.root /opt/mysqld_exporter
+		chmod -R 0755 /opt/mysqld_exporter
+		systemctl daemon-reload
+		systemctl start mysqld_exporter
+		systemctl status mysqld_exporter
+
+		vim prometheus.yml
+- job_name: 'mysql_service'
+  file_sd_configs:
+   - files: ['/opt/prometheus/config/*.yml']
+     refresh_interval: 5s
+
+		vim config/mysql.yml
+- targets: ['localhost:9104']
+
+		./promtool  check config prometheus.yml
+		curl -X POST "http://localhost:9090/-/reload"
+		
+	

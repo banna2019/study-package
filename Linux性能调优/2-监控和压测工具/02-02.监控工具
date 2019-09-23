@@ -1,0 +1,63 @@
+
+
+strace
+	strace命令会拦截和记录进程的系统调用或进程接收到的信号.这是一个有用的诊断、教学和调试工具.它在解决程序遇到的问题方面很有价值.
+	使用时,需要指定要监控的进程ID: 
+		
+	command:
+		yum -y install strace
+		strace -p <pid>
+			注意：当对一个进程执行strace命令时,该进程的性能急剧下降
+			
+		strace -C find / -name "daemon.json"
+		strace -?
+		
+		
+	
+Proc文件系统
+	proc文件系统不是真实的文件系统,但是它真的十分有用.它不是存储数据的;
+	而是提供运行内核的监控和操作接口.proc文件系统让管理员可以监控和修改运行中的内核.
+	大多数Linux性能工具都要依赖于/proc提供的信息.
+	
+	图片(a-sample-proc-file-system.png)
+	
+	
+	
+	/proc目录下的文件
+		/proc根目录下的各种文件里面包含相关系统的统计.可以找到Linux工具使用的信息源,例如vmstat和cpuinfo文件.
+	
+	数字1到X
+		各个数字的子目录指向的是运行进程或者它们的进程ID(PID).目录结构总是已PID 1开始,指向的是init进程,
+		然后是系统上运行的各个PID.每个数字子目录下保存进程相关的统计信息.例如进程映射的虚拟内存.
+	
+	acpi
+		ACPI意思是高级配置与电源接口(advanced configuration and power interface),受到大多数现代桌面和笔记本系统支持.
+		由于ACPI主要是PC技术,所以在服务器上通常是禁用状态.ACPI的更多信息,查看: http://www.apci.info
+	
+	总线(bus)
+		这个子目录包含总线子系统的信息,例如PCI总线或者系统USB接口.
+	
+	irq
+		irq目录包含系统中断的信息.这个目录下的每个子目录代表一次中断,也可能是一个附加设备,例如网卡.
+		在irq子目录下,可以修改一个给定中断的CPU关联(affinity).
+	
+	net
+		网络子目录下包含网络接口的原始统计数据,例如收到的多播包或接口的路由.
+	
+	scsi
+		scsi子目录包含系统上关于SCSI子系统的信息,例如附加设备或者驱动调整.
+	
+	sys
+		在sys子目录下,是可调整的内核参数,例如虚拟内存管理器或者是网络栈的行为.
+		/proc/sys
+	
+	tty
+		虚拟终端和附加的物理设备信息都包含在tty子目录中
+		
+		
+		
+KDE System Guard
+	省略
+		
+Gnome System Monitor	
+	省略

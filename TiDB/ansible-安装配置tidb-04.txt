@@ -1,0 +1,92 @@
+
+一、git tidb-ansible安装代码并配置插件
+git clone -b v2.1.14 https://github.com/pingcap/tidb-ansible.git
+sudo pip install -r ./requirements.txt
+
+
+二、ansible inventory中配置tidb服务器节点信息
+#此处需要修改hosts.ini和inventory.ini(当中的主机信息)
+cp hosts.ini{,.bak}
+cat >hosts.ini<<EOF
+[servers]
+10.18.12.9   
+10.18.53.251
+10.18.49.227
+10.18.60.17 
+10.18.58.48 
+10.18.52.95 
+10.18.48.205
+10.18.52.97 
+10.18.50.184
+
+[all:vars]
+username = tidb
+ntp_server = pool.ntp.org
+EOF
+
+
+cp inventory.ini{,.bak}
+vim inventory.ini
+[tidb_servers]
+内网IP信息
+内网IP信息
+
+[pd_servers]
+内网IP信息
+内网IP信息
+内网IP信息
+
+[tikv_servers]
+TiKV1-1 ansible_host=内网IP信息  deploy_dir=/data/deploy tikv_port=20171 labels="host=tikv1"
+TiKV2-1 ansible_host=内网IP信息  deploy_dir=/data/deploy tikv_port=20171 labels="host=tikv2"
+TiKV3-1 ansible_host=内网IP信息  deploy_dir=/data/deploy tikv_port=20171 labels="host=tikv3"
+
+[monitoring_servers]
+内网IP信息
+
+[grafana_servers]
+内网IP信息
+
+[monitored_servers]
+内网IP信息
+内网IP信息
+内网IP信息
+内网IP信息
+内网IP信息
+内网IP信息
+内网IP信息
+内网IP信息
+
+
+
+三、ansible测试tidb节点
+
+sudo chmod -R 700 /home/tidb/.ssh
+chmod 600 /home/tidb/.ssh/id_rsa
+
+#依赖包安装
+yum -y install epel-release git curl sshpass
+yum -y install python2-pip
+
+sudo ansible-playbook -i hosts.ini create_users.yml -u root -k 		#测试ssh互信
+ansible-playbook -i hosts.ini deploy_ntp.yml -u tidb -b				#tidb节点部署ntp时间同步服务
+ansible -i hosts.ini all -m shell -a 'whoami'						#测试tidb节点当前用户
+ansible -i inventory.ini all -m shell -a 'whoami'				#测试tidb节点当前用户
+ansible -i inventory.ini all -m shell -a 'whoami' -b			#测试tidb节点当前用户
+
+
+四、部署tidb
+ansible-playbook local_prepare.yml						#联网下载TiDB binary到中控机本地
+ansible -i hosts.ini all -m shell -a 'whoami' -b		#测试tidb节点当前用户
+ansible-playbook bootstrap.yml							#初始化系统环境,修改内核参数
+ansible-playbook deploy.yml								#部署TiDB集群软件
+ansible-playbook start.yml								#启动TiDB集群
+
+
+五、tidb安装完成部署,进行测试及监控查看
+	使用MySQL客户端连接测试,TCP4000端口是TiDB服务默认端口:
+		mysql -u root -h 10.101.1.195 -P 4000
+
+	通过浏览器访问监控grafana平台:
+		地址: http://54.255.165.106:3000 
+		默认帐号密码是: admin/admin
